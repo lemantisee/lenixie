@@ -2,10 +2,12 @@
 
 #include <libopencm3/stm32/rtc.h>
 
-void RTClock::init()
+void RTClock::init(ESP9266 *wifi)
 {
 	rcc_periph_clock_enable(RCC_PWR);
 	rtc_auto_awake(RCC_LSE, 0x7fff);
+
+	mNtp.init(wifi);
 
 	// PWR_BackupAccessCmd(ENABLE);
 	// if ((RCC->BDCR & RCC_BDCR_RTCEN) != RCC_BDCR_RTCEN) {
@@ -39,6 +41,13 @@ const RTClock::Time &RTClock::getTime()
 	mTime.minutes = (gen_seconds % 3600) / 60;
 	mTime.hours = gen_seconds / 3600;
 	return mTime;
+}
+
+void RTClock::syncTime(const char *ntpServer)
+{
+	if (mNtp.process(ntpServer)) {
+		setTime(mNtp.getHours(), mNtp.getMinutes(), mNtp.getSeconds());
+	}
 }
 
 void RTClock::setTimeZone(uint8_t timezone)

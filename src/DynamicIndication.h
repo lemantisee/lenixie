@@ -17,12 +17,11 @@ public:
     };
 
 	DynamicIndication () = default;
-	
+
+	void setDecoderPins(uint32_t port, uint16_t Apin, uint16_t Bpin, uint16_t Cpin, uint16_t Dpin);
 	void setSign(Tube tube, uint32_t port, uint16_t pin);
-	void setNumbersPin(BCDDecoder *decoder);
-	void setNumber(Tube tube, uint8_t number);
+	void setNumber(uint8_t number1, uint8_t number2, uint8_t number3, uint8_t number4);
 	void process();
-	void startIndication(bool state);
 	
 private:
 	struct Sign
@@ -34,13 +33,10 @@ private:
 	void clearSigns();
 	std::optional<Sign> getCurrentSign();
 	
-	BCDDecoder *mDecoder = nullptr;
+	BCDDecoder mDecoder;
 	std::array<Sign, 4> mSigns;
-	uint8_t currentSignsNumber = 0;
-	uint8_t currentSigns = 0;
+	uint8_t mCurrentSignsNumber = 0;
+	uint8_t mCurrentSigns = 0;
 	volatile uint8_t mTimer = 0;
-	volatile bool start = false;
-	
-
 };
 

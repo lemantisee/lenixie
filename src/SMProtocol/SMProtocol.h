@@ -29,8 +29,7 @@ public:
 private:
 	Interface *mInterface = nullptr;
 	uint16_t mParametr = 0;
-	char *mStringParametrPtr = nullptr;
-	std::array<char, 100> mStringParametr;
+	std::array<char, 100> mStringParametr = {};
 };
 
 #endif

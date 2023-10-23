@@ -1,7 +1,7 @@
 #include "ESP9266.h"
 
-#include <string.h>
-#include <stdio.h>
+#include <cstring>
+
 #include <libopencm3/stm32/gpio.h>
 #include <libopencm3/stm32/usart.h>
 #include <libopencm3/cm3/nvic.h>
@@ -66,7 +66,6 @@ void ESP9266::init(uint32_t usart, uint32_t port, uint16_t rxPin, uint16_t txPin
     waitForAnswer("OK", 2000);
 }
 
-
 void ESP9266::sendCommand(const char *cmd, bool sendEnd) {
     // USART_ClearFlag(espUart, USART_FLAG_RXNE);
     //USART_ReceiveData(espUart);
@@ -83,7 +82,6 @@ void ESP9266::sendCommand(const char *cmd, bool sendEnd) {
         endCommand();
     }
 }
-
 
 void ESP9266::processUART()
 {
@@ -115,8 +113,6 @@ void ESP9266::processUART()
     // }
 }
 
-
-
 bool ESP9266::setMode(espMode_t mode) {
     if (mMode == mode) {
         return true;
@@ -144,7 +140,6 @@ bool ESP9266::setMode(espMode_t mode) {
     return waitForAnswer("OK", 5000);
 }
 
-
 bool ESP9266::waitForAnswer(const char *answer1, uint16_t timeout, const char *answer2) {
     mTimer = 0;
     while ((mTimer < timeout)) {
@@ -169,11 +164,9 @@ bool ESP9266::waitForAnswer(const char *answer1, uint16_t timeout, const char *a
     return false;
 }
 
-
 void ESP9266::processTimer() {
     mTimer++;
 }
-
 
 bool ESP9266::connectNetwork(const char* ssid, const char* password) {
     setMode(ESP9266::STAMode);
@@ -201,7 +194,6 @@ bool ESP9266::connectNetwork(const char* ssid, const char* password) {
     */
 }
 
-
 void ESP9266::endCommand() {
     usart_send_blocking(mUart, '\r');
     usart_send_blocking(mUart, '\n');
@@ -216,7 +208,6 @@ void ESP9266::endCommand() {
     // Logger::instance().log("\r\n");
 }
 
-
 bool ESP9266::test() {
     // USART_ClearFlag(mUart, USART_FLAG_RXNE);
     clearBuffer();
@@ -224,7 +215,6 @@ bool ESP9266::test() {
     // Logger::instance().log("Send command AT");
     return waitForAnswer("OK", 1000);
 }
-
 
 bool ESP9266::connectToServerUDP(const char* host, uint16_t port)
 {
@@ -244,7 +234,6 @@ bool ESP9266::connectToServerUDP(const char* host, uint16_t port)
     return waitForAnswer("OK", 1000, "ALREADY");
 }
 
-
 bool ESP9266::sendUDPpacket(const char* msg, uint16_t size)
 {
     clearBuffer();
@@ -255,7 +244,6 @@ bool ESP9266::sendUDPpacket(const char* msg, uint16_t size)
     return waitForAnswer("OK", 2000);
 }
 
-
 bool ESP9266::sendUDPpacket(const char* msg, const char* size)
 {
     sendCommand("AT+CIPSEND=");
@@ -265,7 +253,6 @@ bool ESP9266::sendUDPpacket(const char* msg, const char* size)
     return true;
 }
 
-
 void ESP9266::sendData(uint8_t *data, uint16_t size) {
     for (uint16_t i = 0; i < size; i++) {
         usart_send_blocking(mUart, data[i]);
@@ -274,7 +261,6 @@ void ESP9266::sendData(uint8_t *data, uint16_t size) {
     }
 
 }
-
 
 bool ESP9266::getIP() {
     //AT + CIFSR
@@ -352,7 +338,6 @@ bool ESP9266::setAP(const char *ssid, const char *pass, const char *) {
     return waitForAnswer("OK", 5000);
 }
 
-
 void ESP9266::SendString(const char *str) {
     clearBuffer();
     wait(1000);
@@ -398,17 +383,14 @@ void ESP9266::SendString(const char *str, const char *ip, uint16_t port) {
     waitForAnswer("SEND OK", 2000);
 }
 
-
 uint8_t ESP9266::getBufferSize() {
     return mBuffer.size();
 }
-
 
 uint8_t * ESP9266::getIncomeData() {
     char *ptr = strchr((char *)mBuffer.data(), ':');
     return ((uint8_t*)ptr + 1);
 }
-
 
 bool ESP9266::hasIncomeData() {
     if (strstr((char *)mBuffer.data(), "+IPD") != nullptr) {
@@ -419,19 +401,16 @@ bool ESP9266::hasIncomeData() {
     return false;
 }
 
-
 void ESP9266::clearBuffer() {
     mCurrentByte = 0;
     mBuffer.fill(0);
 }
-
 
 void ESP9266::closeCurrentConnection() {
     // Logger::instance().log("Closing current connection\n");
     sendCommand("AT+CIPCLOSE", true);
     waitForAnswer("OK", 1000);
 }
-
 
 bool ESP9266::setAPip(const char *ip) {
     sendCommand("AT+CIPAP=");
@@ -441,7 +420,6 @@ bool ESP9266::setAPip(const char *ip) {
     return waitForAnswer("OK", 5000);
 }
 
-
 void ESP9266::reset() {
     sendCommand("AT+RST", true);
     //endCommand();
@@ -450,14 +428,12 @@ void ESP9266::reset() {
     // Logger::instance().log("Wifi reset complete\n");
 }
 
-
 void ESP9266::wait(uint16_t timeout) {
     mTimer = 0;
     while (mTimer < timeout){
         asm("nop");
     }
 }
-
 
 bool ESP9266::isConnected() {
     sendCommand("AT+CIPSTATUS", true);

@@ -2,6 +2,10 @@
 
 #include <stdint.h>
 
+#include "NTPHandle.h"
+
+class ESP9266;
+
 class RTClock
 {
 public:
@@ -13,13 +17,15 @@ public:
 	};
 	
 	RTClock () = default;
-	void init();
+	void init(ESP9266 *wifi);
 	void setTime(uint8_t hours, uint8_t minutes, uint8_t seconds);
 	void setTimeZone(uint8_t timezone);
 	const Time &getTime();
+	void syncTime(const char *ntpServer);
 
 private:
 	Time mTime;
 	uint8_t mTimezone = 0;
+	NTPHandle mNtp;
 };
 

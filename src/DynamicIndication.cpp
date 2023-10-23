@@ -2,6 +2,13 @@
 
 #include <libopencm3/stm32/gpio.h>
 
+void DynamicIndication::setDecoderPins(uint32_t port, uint16_t Apin, uint16_t Bpin, uint16_t Cpin, uint16_t Dpin)
+{
+    mDecoder.init(port, Apin, Bpin, Cpin, Dpin);
+    mCurrentSignsNumber = 0;
+    mTimer = 0;
+}
+
 void DynamicIndication::setSign(Tube tube, uint32_t port, uint16_t pin)
 {
     if (tube >= mSigns.size()) {
@@ -11,35 +18,24 @@ void DynamicIndication::setSign(Tube tube, uint32_t port, uint16_t pin)
     mSigns[tube] = {.port = port, .pin = pin, .number = 0};
 
     gpio_set_mode(port, GPIO_MODE_OUTPUT_50_MHZ, GPIO_CNF_OUTPUT_PUSHPULL, pin);
-    currentSignsNumber++;
-    start = false;
-}
-
-void DynamicIndication::setNumbersPin(BCDDecoder *decoder)
-{
-    mDecoder = decoder;
-    currentSignsNumber = 0;
-    mTimer = 0;
+    mCurrentSignsNumber++;
 }
 
 void DynamicIndication::process()
 {
-    if(!start) {
-        return;
-    }
-
-    if(auto sign = getCurrentSign()) {
+    if (auto sign = getCurrentSign()) {
         clearSigns();
         gpio_set(sign->port, sign->pin);
-        mDecoder->setValue(sign->number);
+        mDecoder.setValue(sign->number);
     }
 }
 
-void DynamicIndication::setNumber(Tube tube, uint8_t number)
+void DynamicIndication::setNumber(uint8_t number1, uint8_t number2, uint8_t number3, uint8_t number4)
 {
-    if (tube < mSigns.size()) {
-        mSigns[tube].number = number;
-    }
+    mSigns[0].number = number1;
+    mSigns[1].number = number2;
+    mSigns[2].number = number3;
+    mSigns[3].number = number4;
 }
 
 void DynamicIndication::clearSigns()
@@ -86,10 +82,4 @@ std::optional<DynamicIndication::Sign> DynamicIndication::getCurrentSign()
     }
 
     return std::nullopt;
-}
-
-void DynamicIndication::startIndication(bool state)
-{
-    start = state;
-    clearSigns();
 }

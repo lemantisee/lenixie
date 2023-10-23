@@ -1,6 +1,7 @@
 #include "SMProtocol.h"
 
 #include "Interface.h"
+#include "SString.h"
 // #include "Logger.h"
 
 void SMProtocol::init(Interface *inter)
@@ -16,11 +17,16 @@ void SMProtocol::SendCommand(const char *str)
 
 void SMProtocol::SendCommand(const char *str, uint32_t parametr)
 {
-	char str_param[10];
-	memset(str_param, 0, 10);
-    sprintf(str_param, "%d", int(parametr));
-	char * tmp_str = strcat((char *)str, ":");
-	mInterface->SendString(strcat(tmp_str, str_param));
+	SString<255> tmpstr;
+	tmpstr.append(str);
+	tmpstr.append(":");
+	tmpstr.appendNumber(parametr);
+	mInterface->SendString(tmpstr.c_str());
+	// char str_param[10];
+	// std::memset(str_param, 0, 10);
+    // sprintf(str_param, "%d", int(parametr));
+	// char * tmp_str = strcat((char *)str, ":");
+	// mInterface->SendString(strcat(tmp_str, str_param));
 }
 
 void SMProtocol::SendCommand(const char *str, const char *parametr)
@@ -31,23 +37,34 @@ void SMProtocol::SendCommand(const char *str, const char *parametr)
 
 void SMProtocol::SendCommand(uint8_t cmd, uint32_t parametr)
 {
-	char str_param[10];
-	char str_cmd[mInterface->getBufferSize()];
-	memset(str_param, 0, 10);
-	memset(str_cmd, 0, mInterface->getBufferSize());
-	sprintf(str_param, "%d", int(parametr));
-	sprintf(str_cmd, "%d", cmd);
-	char * tmp_str = strcat(str_cmd, ":");
-	mInterface->SendString(strcat(tmp_str, str_param));
+	SString<255> str;
+	str.appendNumber(cmd);
+	str.append(":");
+	str.appendNumber(parametr);
+	mInterface->SendString(str.c_str());
+
+	// char str_param[10];
+	// char str_cmd[mInterface->getBufferSize()];
+	// memset(str_param, 0, 10);
+	// memset(str_cmd, 0, mInterface->getBufferSize());
+	// sprintf(str_param, "%d", int(parametr));
+	// sprintf(str_cmd, "%d", cmd);
+	// char * tmp_str = strcat(str_cmd, ":");
+	// mInterface->SendString(strcat(tmp_str, str_param));
 }
 
 void SMProtocol::SendCommand(uint8_t cmd, const char *parametr)
 {
-	char str_cmd[mInterface->getBufferSize()];
-	memset(str_cmd, 0, mInterface->getBufferSize());
-	sprintf(str_cmd, "%d", cmd);
-	char * tmp_str = strcat(str_cmd, ":");
-	mInterface->SendString(strcat(tmp_str, (char *)parametr));
+	SString<255> str;
+	str.appendNumber(cmd);
+	str.append(":");
+	str.append(parametr);
+	mInterface->SendString(str.c_str());
+	// char str_cmd[mInterface->getBufferSize()];
+	// memset(str_cmd, 0, mInterface->getBufferSize());
+	// sprintf(str_cmd, "%d", cmd);
+	// char * tmp_str = strcat(str_cmd, ":");
+	// mInterface->SendString(strcat(tmp_str, (char *)parametr));
 }
 
 bool SMProtocol::isCommandReady()
@@ -71,12 +88,12 @@ uint8_t SMProtocol::getCommand()
             // Logger::instance().log(cmdStr);
             // Logger::instance().log("\n");
             command = atoi(cmdStr);
-			mStringParametrPtr = strsep(&tmpPtr, ":");
-            strcpy(mStringParametr.data(), mStringParametrPtr);
+			char *stringParametrPtr = strsep(&tmpPtr, ":");
+            strcpy(mStringParametr.data(), stringParametrPtr);
             // Logger::instance().log("Parametr:");
             // Logger::instance().log(mStringParametrPtr);
             // Logger::instance().log("\n");
-			mParametr = atoi(mStringParametrPtr);
+			mParametr = atoi(stringParametrPtr);
 		}
 		else {
 			command = atoi((char *)mInterface->getIncomeData());
