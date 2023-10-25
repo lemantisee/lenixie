@@ -2,11 +2,15 @@
 
 #include "ESP9266.h"
 #include <cstring>
+#include <array>
 // #include "Logger.h"
 
+namespace {
 const int mins_in_hour = 60;
 const int secs_to_min = 60;
-uint8_t ntpRequset[48] = { 0x1B, 0, 0, 0, 0, 0, 0, 0, 0 };
+std::array<uint8_t, 48> ntpRequset = { 0x1B, 0, 0, 0, 0, 0, 0, 0, 0 };
+}
+
 
 void NTPHandle::delay(uint32_t ticks) const {
 	for (uint32_t i = 0; i < ticks; i++) {
@@ -20,23 +24,22 @@ void NTPHandle::init(ESP9266 *wifi) {
 }
 
 bool NTPHandle::getNtpRequest() {
-	mWifi->sendUDPpacket((char *)ntpRequset, 48);
+	mWifi->sendUDPpacket((char *)ntpRequset.data(), ntpRequset.size());
 	mWifi->clearBuffer();
-	delay(100000);
+	HAL_Delay(100);
+	// delay(100000);
 	uint8_t *ptr = mWifi->getData(48);
-	delay(100000);
-	if(ptr != nullptr)
-	{
-		std::memcpy(&mNtpAnswer, ptr, sizeof(mNtpAnswer));
-		mSecondsFromStart = (htonl(mNtpAnswer.txTm_s) - NTP_TIMESTAMP_DELTA) % 86400;
-		mWifi->clearBuffer();
-		std::memset(&mNtpAnswer, 0, 48);
-		return true;
-	}
-	else
-	{
+	HAL_Delay(100);
+	// delay(100000);
+	if (!ptr) {
 		return false;
 	}
+
+	std::memcpy(&mNtpAnswer, ptr, sizeof(mNtpAnswer));
+	mSecondsFromStart = (htonl(mNtpAnswer.txTm_s) - NTP_TIMESTAMP_DELTA) % 86400;
+	mWifi->clearBuffer();
+	std::memset(&mNtpAnswer, 0, 48);
+	return true;
 }
 
 bool NTPHandle::getTime() {
@@ -63,6 +66,10 @@ uint8_t NTPHandle::getSeconds() {
 }
 
 bool NTPHandle::process(const char *server){
+	if (!mWifi->isConnected()) {
+		return false;
+	}
+
     setServer(server, 123);
     for (int i = 0; i < 2; i++) {
         getNtpRequest();

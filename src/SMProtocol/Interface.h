@@ -11,7 +11,6 @@ public:
     
     virtual void SendString(const char *str) = 0;
     virtual bool hasIncomeData() = 0;
-    virtual uint8_t getBufferSize() = 0;
     virtual uint8_t *getIncomeData() = 0;
 };
 

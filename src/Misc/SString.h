@@ -10,14 +10,16 @@ class SString
 public:
     SString() = default;
 
-    void append(const char *str) {
+    SString &append(const char *str) {
         std::strcat(mBuffer.data(), str);
+        return *this;
     }
 
-    void appendNumber(uint32_t value) {
+    SString &appendNumber(uint32_t value) {
         std::array<char, 11> valueBuffer;
         std::sprintf(valueBuffer.data(), "%d", int(value));
         std::strcat(mBuffer.data(), valueBuffer.data());
+        return *this;
     }
 
     const char *c_str() const {

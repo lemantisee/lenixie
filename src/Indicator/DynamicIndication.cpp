@@ -1,31 +1,40 @@
 #include "DynamicIndication.h"
 
-#include <libopencm3/stm32/gpio.h>
-
-void DynamicIndication::setDecoderPins(uint32_t port, uint16_t Apin, uint16_t Bpin, uint16_t Cpin, uint16_t Dpin)
+void DynamicIndication::setDecoderPins(GPIO_TypeDef *port, uint16_t Apin, uint16_t Bpin, uint16_t Cpin, uint16_t Dpin)
 {
     mDecoder.init(port, Apin, Bpin, Cpin, Dpin);
     mCurrentSignsNumber = 0;
     mTimer = 0;
 }
 
-void DynamicIndication::setSign(Tube tube, uint32_t port, uint16_t pin)
+void DynamicIndication::setSign(Tube tube, GPIO_TypeDef *port, uint16_t pin)
 {
-    if (tube >= mSigns.size()) {
+    if (tube >= mSigns.size())
+    {
         return;
     }
 
     mSigns[tube] = {.port = port, .pin = pin, .number = 0};
 
-    gpio_set_mode(port, GPIO_MODE_OUTPUT_50_MHZ, GPIO_CNF_OUTPUT_PUSHPULL, pin);
+    HAL_GPIO_WritePin(port, pin, GPIO_PIN_RESET);
+
+    GPIO_InitTypeDef GPIO_InitStruct = {0};
+    GPIO_InitStruct.Pin = pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+    HAL_GPIO_Init(port, &GPIO_InitStruct);
+
+    // gpio_set_mode(port, GPIO_MODE_OUTPUT_50_MHZ, GPIO_CNF_OUTPUT_PUSHPULL, pin);
     mCurrentSignsNumber++;
 }
 
 void DynamicIndication::process()
 {
-    if (auto sign = getCurrentSign()) {
+    if (auto sign = getCurrentSign())
+    {
         clearSigns();
-        gpio_set(sign->port, sign->pin);
+        HAL_GPIO_WritePin(sign->port, sign->pin, GPIO_PIN_SET);
         mDecoder.setValue(sign->number);
     }
 }
@@ -40,11 +49,13 @@ void DynamicIndication::setNumber(uint8_t number1, uint8_t number2, uint8_t numb
 
 void DynamicIndication::clearSigns()
 {
-    for (uint8_t i = 0; i < 4; i++) {
-        gpio_clear(mSigns[i].port, mSigns[i].pin);
+    for (uint8_t i = 0; i < 4; i++)
+    {
+        HAL_GPIO_WritePin(mSigns[i].port, mSigns[i].pin, GPIO_PIN_RESET);
     }
 
-    for (int i = 0; i < 4000; i++) {
+    for (int i = 0; i < 4000; i++)
+    {
         asm("nop");
     }
 }
@@ -53,8 +64,10 @@ std::optional<DynamicIndication::Sign> DynamicIndication::getCurrentSign()
 {
     const uint8_t indicationPeriod = 4;
 
-    for (uint8_t i = 0; i < mSigns.size(); ++i) {
-        if (mTimer == i * indicationPeriod) {
+    for (uint8_t i = 0; i < mSigns.size(); ++i)
+    {
+        if (mTimer == i * indicationPeriod)
+        {
             return mSigns[i];
         }
     }
@@ -77,7 +90,8 @@ std::optional<DynamicIndication::Sign> DynamicIndication::getCurrentSign()
 
     mTimer++;
 
-    if (mTimer >= indicationPeriod * mSigns.size()) {
+    if (mTimer >= indicationPeriod * mSigns.size())
+    {
         mTimer = 0;
     }
 
