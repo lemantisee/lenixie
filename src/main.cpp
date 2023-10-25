@@ -10,6 +10,7 @@
 #include "SMProtocol.h"
 #include "Logger.h"
 #include "SString.h"
+#include "WifiCredentials.h"
 
 namespace
 {
@@ -110,7 +111,16 @@ int main(void)
     Logger::log("Started");
 
     wifi.init(USART1, 115200);
-    wifi.switchToAP();
+    if (!wifi.isConnected()) {
+        wifi.connectNetwork(WifiCredentials::userSsid(), WifiCredentials::userPassword());
+    }
+        // if (!wifi.isConnected()) {
+    //     // Logger::instance().log("Cannot connect ot wifi\n");
+    //     wifi.switchToAP();
+    // } else {
+    //     // Logger::instance().log("Connected ot wifi\n");
+    //     Clock.syncTime(ntpServer);
+    // }
 
     // protocol.init(&wifi);
 

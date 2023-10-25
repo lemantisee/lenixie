@@ -1,10 +1,10 @@
 #pragma once
 
-namespace WifiCredentials
+class WifiCredentials
 {
-    const char *defaultApSsid = "lenixie";
-    const char *defaultApPassword = "lenixie1234";
-
-    const char *userSsid = "Your wifi network ssid";
-    const char *userPassword = "Your wifi network password";
-} // namespace name
+public:
+    static const char *defaultApSsid() {return "lenixie";}
+    static const char *defaultApPassword() {return "lenixie1234";}
+    static const char *userSsid() {return "Your wifi network ssid";}
+    static const char *userPassword() {return "Your wifi network password";}
+};

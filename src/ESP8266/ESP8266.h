@@ -8,9 +8,9 @@
 class ESP8266 : public Interface
 {
 public:
-	enum  espMode_t
+	enum  Mode
 	{
-         STAMode = 1, SoftAP = 2, STA_AP = 3
+         Unknown = 0, Station = 1, SoftAP = 2, StationAndSoftAP = 3
 	};
 
 	ESP8266() = default;
@@ -50,7 +50,7 @@ private:
 	};
 
 	void startReadUart();
-	bool setMode(espMode_t mode);
+	bool setMode(Mode mode);
 	bool setAP(const char *ssid, const char *pass);
 	void sendCommand(const char *cmd, bool sendEnd = false);
 	void sendData(uint8_t *data, uint16_t size);
@@ -64,7 +64,7 @@ private:
 	StringBuffer<255> mBuffer;
 	StringBuffer<64> mInputBuffer;
 	bool answerReady = false;
-	espMode_t mMode = STAMode;
+	Mode mMode = Unknown;
 	bool mTimeout = false;
 	char ipoctet1[4];
 	char ipoctet2[4];

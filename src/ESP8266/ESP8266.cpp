@@ -4,6 +4,7 @@
 
 #include "SString.h"
 #include "Logger.h"
+#include "EspAtCommand.h"
 #include "WifiCredentials.h"
 
 namespace
@@ -20,7 +21,6 @@ void ESP8266::init(USART_TypeDef *usart, uint32_t baudrate)
     wifiInstance = this;
     answerReady = false;
     mTimeout = false;
-    mMode = STAMode;
 
     mUart.Instance = usart;
     mUart.Init.BaudRate = baudrate;
@@ -43,8 +43,12 @@ void ESP8266::init(USART_TypeDef *usart, uint32_t baudrate)
     reset();
     test();
 
-    sendCommand("AT+CIPMUX=0", true);
+    EspAtCommand cmd("AT+CIPMUX=");
+    cmd.add(uint32_t(0));
+    sendCommand(cmd.string(), true);
     waitForAnswer("OK", 2000);
+
+    setMode(Station);
 
     Logger::log("Wifi inited");
 }
@@ -68,31 +72,33 @@ void ESP8266::startReadUart()
     HAL_UARTEx_ReceiveToIdle_IT(&mUart, (uint8_t *)mInputBuffer.data(), mInputBuffer.size());
 }
 
-bool ESP8266::setMode(espMode_t mode)
+bool ESP8266::setMode(Mode mode)
 {
     if (mMode == mode) {
         return true;
     }
 
     mMode = mode;
+
+    EspAtCommand cmd("AT+CWMODE=");
+    cmd.add(mMode);
+
     switch (mMode)
     {
-    case STAMode:
-        Logger::log("Sending to ESP AT+CWMODE=1\n");
-        sendCommand("AT+CWMODE=1", true);
+    case Station:
+        Logger::log("Sending to ESP AT+CWMODE=1");
         break;
     case SoftAP:
-        Logger::log("Sending to ESP AT+CWMODE=2\n");
-        sendCommand("AT+CWMODE=2", true);
+        Logger::log("Sending to ESP AT+CWMODE=2");
         break;
-    case STA_AP:
-        Logger::log("Sending to ESP AT+CWMODE=3\n");
-        sendCommand("AT+CWMODE=3", true);
+    case StationAndSoftAP:
+        Logger::log("Sending to ESP AT+CWMODE=3");
         break;
     default:
-        break;
+        return false;
     }
     
+    sendCommand(cmd.string(), true);
     return waitForAnswer("OK", 5000);
 }
 
@@ -112,8 +118,6 @@ bool ESP8266::waitForAnswer(const char *answer1, uint16_t timeout, const char *a
         }
 
         asm("nop");
-        //for (int i = 0; i < 20000; i++) asm("nop");
-
     }
 
     Logger::log("waitForAnswer failed with buffer");
@@ -123,42 +127,18 @@ bool ESP8266::waitForAnswer(const char *answer1, uint16_t timeout, const char *a
 }
 
 bool ESP8266::connectNetwork(const char* ssid, const char* password) {
-    if (!setMode(ESP8266::STAMode)) {
+    if (!setMode(ESP8266::Station)) {
         return false;
     }
 
-    Logger::log("Connecting to wifi network");
+    Logger::log("Connecting to wifi network with command");
 
-    SString<255> cmd;
-    cmd.append("AT+CWJAP=");
-    cmd.append("\"").append(ssid).append("\",");
-    cmd.append("\"").append(password).append("\"");
-    sendCommand(cmd.c_str(), true);
+    EspAtCommand cmd("AT+CWJAP_CUR=");
+    cmd.add(ssid).add(password);
+    Logger::log(cmd.string());
 
+    sendCommand(cmd.string(), true);
     return waitForAnswer("OK", 20000);
-
-    // sendCommand("AT+CWJAP=");
-    // sendCommand("\"");
-    // sendCommand(ssid);
-    // sendCommand("\"");
-    // sendCommand(",");
-    // sendCommand("\"");
-    // sendCommand(password);
-    // sendCommand("\"", true);
-    // bool result = waitForAnswer("OK", 20000);
-
-    // Logger::log(result ? "Connected to wifi network" : "Not connected to wifi network");
-
-    // return result;
-
-    /*
-    sendCommand("AT+CIPMUX=0");
-    endCommand();
-    waitForAnswer("OK");
-    sendCommand("AT+CIPMODE=0");
-    endCommand();
-    waitForAnswer("OK");
-    */
 }
 
 void ESP8266::endCommand() {
@@ -177,69 +157,41 @@ bool ESP8266::connectToServerUDP(const char* host, uint16_t port)
 {
     //AT+CIPSTART="TCP","192.168.0.65",333
     //"UDP", "0", 0, 1025, 2
-    const char *localPort = "3210";
-    SString<255> cmd;
-    cmd.append("AT+CIPSTART=\"UDP\",");
-    cmd.append("\"").append(host).append("\",").appendNumber(port).append(",");
-    cmd.appendNumber(port).append(",");
-    cmd.append(localPort).append(",");
-    cmd.appendNumber(0); //destination peer entity of UDP will not change
+    uint16_t localPort = 3210;
+    uint16_t entity = 0; //destination peer entity of UDP will not change
+    EspAtCommand cmd("AT+CIPSTART=");
+    cmd.add("UDP").add(host).add(port).add(localPort).add(entity);
 
-    sendCommand(cmd.c_str(), true);
+    sendCommand(cmd.string(), true);
     return waitForAnswer("OK", 1000, "ALREADY");
-
-    // std::array<char, 6> buff;
-    // snprintf(buff.data(), 6, "%d", port);
-    // sendCommand("AT+CIPSTART=\"UDP\",");
-    // sendCommand("\"");
-    // sendCommand(host);
-    // sendCommand("\"");
-    // sendCommand(",");
-    // sendCommand(buff.data());
-    // sendCommand(",");
-    // sendCommand("1112");
-    // sendCommand(",0", true);
-    // return waitForAnswer("OK", 1000, "ALREADY");
 }
 
 bool ESP8266::sendUDPpacket(const char* msg, uint16_t size)
 {
-    SString<255> cmd;
-    cmd.append("AT+CIPSEND=").appendNumber(size);
+    EspAtCommand cmd("AT+CIPSEND=");
+    cmd.add(size);
 
-    sendCommand(cmd.c_str(), true);
+    sendCommand(cmd.string(), true);
     if (!waitForAnswer(">", 1000)) {
         return false;
     }
 
     sendData((uint8_t*)msg, size);
     return waitForAnswer("OK", 2000);
-
-    // sendCommand("AT+CIPSEND=48", true);
-    // waitForAnswer(">", 1000);
-    // mBuffer.clear();
-    // sendData((uint8_t*)msg, size);
-    // return waitForAnswer("OK", 2000);
 }
 
 bool ESP8266::sendUDPpacket(const char* msg, const char* size)
 {
-    SString<255> cmd;
-    cmd.append("AT+CIPSEND=").append(size);
+    EspAtCommand cmd("AT+CIPSEND=");
+    cmd.add(size);
 
-    sendCommand(cmd.c_str(), true);
+    sendCommand(cmd.string(), true);
     if (!waitForAnswer(">", 1000)) {
         return false;
     }
 
     sendCommand(msg, true);
     return true;
-
-    // sendCommand("AT+CIPSEND=");
-    // sendCommand(size, true);
-    // waitForAnswer(">", 1000);
-    // sendCommand(msg, true);
-    // return true;
 }
 
 void ESP8266::sendData(uint8_t *data, uint16_t size) {
@@ -295,7 +247,7 @@ bool ESP8266::switchToAP()
         return false;
     }
 
-	if (!setAP(WifiCredentials::defaultApSsid, WifiCredentials::defaultApPassword)) {
+	if (!setAP(WifiCredentials::defaultApSsid(), WifiCredentials::defaultApPassword())) {
         return false;
     }
 
@@ -306,79 +258,39 @@ bool ESP8266::setAP(const char *ssid, const char *pass) {
     //AT+CWSAP="ssid","password",10,4
 
     const uint8_t channel = 10;
-    SString<255> cmd;
-    cmd.append("AT+CWSAP=");
-    cmd.append("\"").append(ssid).append("\",");
-    cmd.append("\"").append(pass).append("\",");
-    cmd.appendNumber(channel).append(",").appendNumber(WPA2_PSK);
 
-    sendCommand(cmd.c_str(), true);
+    EspAtCommand cmd("AT+CWSAP=");
+    cmd.add(ssid).add(pass).add(channel).add(WPA2_PSK);
+
+    sendCommand(cmd.string(), true);
     return waitForAnswer("OK", 5000);
 }
 
 bool ESP8266::SendString(const char *str)
 {
-    SString<255> cmd;
-    cmd.append("AT+CIPSEND=").appendNumber(strlen(str));
-    sendCommand(cmd.c_str(), true);
+    EspAtCommand cmd("AT+CIPSEND=");
+    cmd.add(strlen(str));
+    sendCommand(cmd.string(), true);
     if (!waitForAnswer(">", 1000)) {
         return false;
     }
 
     sendCommand(str);
     return waitForAnswer("SEND OK", 2000);
-
-    // HAL_Delay(1000);
-    // uint8_t strSize = strlen(str);
-    // char buffSize[4];
-    // memset(buffSize, 0, 4);
-    // snprintf(buffSize, 4, "%d", strSize);
-
-    // sendCommand("AT+CIPSEND=");
-    // sendCommand(buffSize, true);
-    // waitForAnswer(">", 1000);
-    // Logger::log("Sending data:");
-    // Logger::log(str);
-    // sendCommand(str);
-    // waitForAnswer("SEND OK", 2000);
 }
 
 bool ESP8266::SendString(const char *str, const char *ip, uint16_t port)
 {
-    SString<255> cmd;
-    cmd.append("AT+CIPSEND=").appendNumber(strlen(str)).append(",");
-    cmd.append("\"").append(ip).append("\",").appendNumber(port);
+    EspAtCommand cmd("AT+CIPSEND=");
+    cmd.add(strlen(str)).add(ip).add(port);
 
-    sendCommand(cmd.c_str(), true);
+    sendCommand(cmd.string(), true);
     if (!waitForAnswer(">", 1000)) {
         return false;
     }
 
     sendCommand(str);
     return waitForAnswer("SEND OK", 2000);
-
-    // uint8_t strSize = strlen(str);
-    // char buffSize[4];
-    // memset(buffSize, 0, 4);
-    // snprintf(buffSize, 4, "%d", strSize);
-
-    // char portStr[6];
-    // memset(portStr, 0, 6);
-    // snprintf(portStr, 6, "%d", port);
-
-    // sendCommand("AT+CIPSEND=");
-    // sendCommand(buffSize);
-    // sendCommand(",");
-    // sendCommand("\"");
-    // sendCommand(ip);
-    // sendCommand("\"");
-    // sendCommand(",");
-    // sendCommand(portStr, true);
-    // waitForAnswer(">", 1000);
-    // Logger::log("Sending data:");
-    // Logger::log(str);
-    // sendCommand(str);
-    // waitForAnswer("SEND OK", 2000);
 }
 
 uint8_t * ESP8266::getIncomeData() {
@@ -403,23 +315,16 @@ void ESP8266::closeCurrentConnection() {
 }
 
 bool ESP8266::setAPip(const char *ip) {
-    SString<255> cmd;
-    cmd.append("AT+CIPAP=").append("\"").append(ip).append("\"");
+    EspAtCommand cmd("AT+CIPAP=");
+    cmd.add(ip);
 
-    sendCommand(cmd.c_str(), true);
+    sendCommand(cmd.string(), true);
     return waitForAnswer("OK", 5000);
-
-    // sendCommand("AT+CIPAP=");
-    // sendCommand("\"");
-    // sendCommand(ip);
-    // sendCommand("\"", true);
-    // return waitForAnswer("OK", 5000);
 }
 
 void ESP8266::reset() {
     sendCommand("AT+RST", true);
     HAL_Delay(10000);
-    //waitForAnswer("OK", 10000);
     Logger::log("Wifi reset complete");
 }
 
