@@ -3,7 +3,6 @@
 #include "ESP8266.h"
 #include <cstring>
 #include <array>
-// #include "Logger.h"
 
 namespace {
 const int mins_in_hour = 60;
@@ -20,7 +19,7 @@ void NTPHandle::delay(uint32_t ticks) const {
 
 void NTPHandle::init(ESP8266 *wifi) {
 	mWifi = wifi;
-	std::memset(&mNtpAnswer, 0, 48); 
+	mNtpAnswer = {};
 }
 
 bool NTPHandle::getNtpRequest() {
@@ -38,7 +37,7 @@ bool NTPHandle::getNtpRequest() {
 	std::memcpy(&mNtpAnswer, ptr, sizeof(mNtpAnswer));
 	mSecondsFromStart = (htonl(mNtpAnswer.txTm_s) - NTP_TIMESTAMP_DELTA) % 86400;
 	mWifi->clearBuffer();
-	std::memset(&mNtpAnswer, 0, 48);
+	mNtpAnswer = {};
 	return true;
 }
 
@@ -65,12 +64,16 @@ uint8_t NTPHandle::getSeconds() {
 	return mSeconds;
 }
 
-bool NTPHandle::process(const char *server){
+bool NTPHandle::process(const char *server)
+{
 	if (!mWifi->isConnected()) {
 		return false;
 	}
 
-    setServer(server, 123);
+	if(!mWifi->connectToServerUDP(server, 123)){
+		return false;
+	}
+
     for (int i = 0; i < 2; i++) {
         getNtpRequest();
         delay(6000000);
@@ -78,13 +81,8 @@ bool NTPHandle::process(const char *server){
 			return true;
         }
     }
-	return false;
-}
 
-void NTPHandle::setServer(const char *host, uint16_t port) {
-	mHost = (char *)host;
-	mPort = port;
-	mWifi->connectToServerUDP(mHost, mPort);
+	return false;
 }
 
 uint32_t NTPHandle::htonl(uint32_t val) const

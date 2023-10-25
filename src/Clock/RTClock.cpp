@@ -3,7 +3,7 @@
 namespace
 {
 	constexpr uint32_t ntpPeriodSync = 43200000;
-	const char *ntpServer = "0.pool.ntp.org";
+	const char *ntpServer = "0.ua.pool.ntp.org";
 } // namespace
 
 

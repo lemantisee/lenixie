@@ -11,7 +11,6 @@ public:
 	void setValue(uint8_t value);
 	
 private:
-	void delay() const;
 
 	GPIO_TypeDef *mPort = nullptr;
 	uint16_t mApin = 0; 

@@ -11,9 +11,6 @@ public:
     NTPHandle () = default;
 
     void init(ESP8266 *wifi);
-    void setServer(const char *host, uint16_t port);
-    bool getNtpRequest();
-    bool getTime();
     uint8_t getHours();
     uint8_t getMinutes();
     uint8_t getSeconds();
@@ -21,6 +18,8 @@ public:
     bool process(const char *server);
 
 private:
+    bool getNtpRequest();
+    bool getTime();
     uint32_t htonl(uint32_t val) const;
     void delay(uint32_t ticks) const;
 

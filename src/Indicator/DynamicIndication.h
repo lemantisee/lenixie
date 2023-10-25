@@ -1,7 +1,6 @@
 #pragma once
 
 #include <array>
-#include <optional>
 
 #include "BCDDecoder.h"
 
@@ -31,12 +30,11 @@ private:
 		uint8_t number = 0;
 	};
 	void clearSigns();
-	std::optional<Sign> getCurrentSign();
+	const Sign *getCurrentSign();
 	
 	BCDDecoder mDecoder;
 	std::array<Sign, 4> mSigns;
-	uint8_t mCurrentSignsNumber = 0;
 	uint8_t mCurrentSigns = 0;
-	volatile uint8_t mTimer = 0;
+	uint8_t mTimer = 0;
 };
 

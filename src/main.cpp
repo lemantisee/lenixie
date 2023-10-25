@@ -71,13 +71,13 @@ extern "C"
         HAL_SYSTICK_IRQHandler();
         Indication.process();
 
-        // ++rtcTubePeriod;
-        // if (rtcTubePeriod == 1000)
-        // {
-        //     rtcTubePeriod = 0;
-        //     const RTClock::Time &time = Clock.getTime();
-        //     Indication.setNumber(time.hours / 10, time.hours % 10, time.minutes / 10, time.minutes % 10);
-        // }
+        ++rtcTubePeriod;
+        if (rtcTubePeriod == 1000)
+        {
+            rtcTubePeriod = 0;
+            const RTClock::Time &time = Clock.getTime();
+            Indication.setNumber(time.hours / 10, time.hours % 10, time.minutes / 10, time.minutes % 10);
+        }
     }
 
     void USART1_IRQHandler()
