@@ -1,6 +1,6 @@
 #include "NTPHandle.h"
 
-#include "ESP9266.h"
+#include "ESP8266.h"
 #include <cstring>
 #include <array>
 // #include "Logger.h"
@@ -18,7 +18,7 @@ void NTPHandle::delay(uint32_t ticks) const {
 	}
 }
 
-void NTPHandle::init(ESP9266 *wifi) {
+void NTPHandle::init(ESP8266 *wifi) {
 	mWifi = wifi;
 	std::memset(&mNtpAnswer, 0, 48); 
 }

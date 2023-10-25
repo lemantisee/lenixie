@@ -6,7 +6,7 @@
 
 #include "DynamicIndication.h"
 #include "RTClock.h"
-#include "ESP9266.h"
+#include "ESP8266.h"
 #include "SMProtocol.h"
 #include "Logger.h"
 #include "SString.h"
@@ -19,7 +19,7 @@ namespace
 
     DynamicIndication Indication;
     RTClock Clock;
-    ESP9266 wifi;
+    ESP8266 wifi;
     SMProtocol protocol;
 
     enum Command
@@ -70,13 +70,13 @@ extern "C"
         HAL_SYSTICK_IRQHandler();
         Indication.process();
 
-        ++rtcTubePeriod;
-        if (rtcTubePeriod == 1000)
-        {
-            rtcTubePeriod = 0;
-            const RTClock::Time &time = Clock.getTime();
-            Indication.setNumber(time.hours / 10, time.hours % 10, time.minutes / 10, time.minutes % 10);
-        }
+        // ++rtcTubePeriod;
+        // if (rtcTubePeriod == 1000)
+        // {
+        //     rtcTubePeriod = 0;
+        //     const RTClock::Time &time = Clock.getTime();
+        //     Indication.setNumber(time.hours / 10, time.hours % 10, time.minutes / 10, time.minutes % 10);
+        // }
     }
 
     void USART1_IRQHandler()
@@ -109,8 +109,8 @@ int main(void)
 
     Logger::log("Started");
 
-    // wifi.init(USART1, 115200);
-    // wifi.switchToAP();
+    wifi.init(USART1, 115200);
+    wifi.switchToAP();
 
     // protocol.init(&wifi);
 
@@ -130,6 +130,7 @@ int main(void)
 
     for (;;)
     {
+        continue;
         // Clock.process();
         //		if (testBlinkStart) {
         //			Indication.startIndication(updateClock);

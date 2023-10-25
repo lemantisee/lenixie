@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-class ESP9266;
+class ESP8266;
 
 #define NTP_TIMESTAMP_DELTA 2208988800ull
 class NTPHandle
@@ -10,7 +10,7 @@ class NTPHandle
 public:
     NTPHandle () = default;
 
-    void init(ESP9266 *wifi);
+    void init(ESP8266 *wifi);
     void setServer(const char *host, uint16_t port);
     bool getNtpRequest();
     bool getTime();
@@ -45,7 +45,7 @@ private:
 
     };
 
-    ESP9266 *mWifi = nullptr;
+    ESP8266 *mWifi = nullptr;
     char *mHost = nullptr;
     uint16_t mPort = 0;
  

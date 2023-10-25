@@ -7,7 +7,7 @@ namespace
 } // namespace
 
 
-void RTClock::init(ESP9266 *wifi)
+void RTClock::init(ESP8266 *wifi)
 {
 	mHandle.Instance = RTC;
 	mHandle.Init.AsynchPrediv = RTC_AUTO_1_SECOND;

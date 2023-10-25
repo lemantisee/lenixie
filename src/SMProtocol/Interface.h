@@ -9,7 +9,7 @@ public:
     Interface() = default;
     // virtual ~Interface() = default;
     
-    virtual void SendString(const char *str) = 0;
+    virtual bool SendString(const char *str) = 0;
     virtual bool hasIncomeData() = 0;
     virtual uint8_t *getIncomeData() = 0;
 };
