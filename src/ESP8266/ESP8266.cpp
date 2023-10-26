@@ -37,15 +37,17 @@ void ESP8266::init(USART_TypeDef *usart, uint32_t baudrate)
 
     HAL_Delay(500);
 
+    Logger::log("Reseting wifi");
+    reset();
+
     sendCommand("ATE0", true); //echo off
     waitForAnswer("OK", 1000);
 
-    reset();
     test();
 
     EspAtCommand cmd("AT+CIPMUX=");
     cmd.add(uint32_t(0));
-    sendCommand(cmd.string(), true);
+    sendCommand(cmd);
     waitForAnswer("OK", 2000);
 
     setMode(Station);
@@ -57,8 +59,14 @@ void ESP8266::sendCommand(const char *cmd, bool sendEnd) {
     mBuffer.clear();
     HAL_UART_Transmit(&mUart, (uint8_t *)cmd, std::strlen(cmd), 100);
     if (sendEnd) {
-        endCommand();
+        const char *cmdEnd = "\r\n";
+        HAL_UART_Transmit(&mUart, (uint8_t *)cmdEnd, std::strlen(cmdEnd), 100);
     }
+}
+
+void ESP8266::sendCommand(const EspAtCommand &cmd)
+{
+    sendCommand(cmd.string(), true);
 }
 
 void ESP8266::uartInterrupt()
@@ -98,7 +106,7 @@ bool ESP8266::setMode(Mode mode)
         return false;
     }
     
-    sendCommand(cmd.string(), true);
+    sendCommand(cmd);
     return waitForAnswer("OK", 5000);
 }
 
@@ -112,8 +120,6 @@ bool ESP8266::waitForAnswer(const char *answer1, uint16_t timeout, const char *a
         }
 
         if (checkAnswer) {
-            Logger::log(mBuffer.c_str());
-            mBuffer.clear();
             return true;
         }
 
@@ -137,14 +143,8 @@ bool ESP8266::connectNetwork(const char* ssid, const char* password) {
     cmd.add(ssid).add(password);
     Logger::log(cmd.string());
 
-    sendCommand(cmd.string(), true);
+    sendCommand(cmd);
     return waitForAnswer("OK", 20000);
-}
-
-void ESP8266::endCommand() {
-    const char *str = "\r\n";
-    HAL_UART_Transmit(&mUart, (uint8_t *)str, std::strlen(str), 100);
-    mBuffer.clear();
 }
 
 bool ESP8266::test() {
@@ -162,7 +162,7 @@ bool ESP8266::connectToServerUDP(const char* host, uint16_t port)
     EspAtCommand cmd("AT+CIPSTART=");
     cmd.add("UDP").add(host).add(port).add(localPort).add(entity);
 
-    sendCommand(cmd.string(), true);
+    sendCommand(cmd);
     return waitForAnswer("OK", 1000, "ALREADY");
 }
 
@@ -171,32 +171,15 @@ bool ESP8266::sendUDPpacket(const char* msg, uint16_t size)
     EspAtCommand cmd("AT+CIPSEND=");
     cmd.add(size);
 
-    sendCommand(cmd.string(), true);
+    sendCommand(cmd);
     if (!waitForAnswer(">", 1000)) {
         return false;
     }
 
-    sendData((uint8_t*)msg, size);
-    return waitForAnswer("OK", 2000);
-}
-
-bool ESP8266::sendUDPpacket(const char* msg, const char* size)
-{
-    EspAtCommand cmd("AT+CIPSEND=");
-    cmd.add(size);
-
-    sendCommand(cmd.string(), true);
-    if (!waitForAnswer(">", 1000)) {
-        return false;
-    }
-
-    sendCommand(msg, true);
-    return true;
-}
-
-void ESP8266::sendData(uint8_t *data, uint16_t size) {
     mBuffer.clear();
-    HAL_UART_Transmit(&mUart, data, size, 100);
+    HAL_UART_Transmit(&mUart, (uint8_t*)msg, size, 100);
+
+    return waitForAnswer("OK", 2000);
 }
 
 bool ESP8266::getIP() {
@@ -227,17 +210,26 @@ bool ESP8266::getIP() {
     return true;
 }
 
-uint8_t * ESP8266::getData(uint8_t size) {
+bool ESP8266::getData(uint8_t *buffer, uint8_t size)
+{
+    const uint8_t espHeaderSize = 8;
     SString<12> answer;
     answer.append("+IPD,").appendNumber(size);
 
     if (!waitForAnswer(answer.c_str(), 2000)){
-        return nullptr;
+        return false;
     }
 
     HAL_Delay(1000);
+    if (mBuffer.capacity() < 48 + espHeaderSize) {
+        SString<20> str;
+        str.append("buffer capacity ").appendNumber(mBuffer.capacity());
+        Logger::log(str.c_str());
+        return false;
+    }
     char *ptr = strstr((char *)mBuffer.data(), answer.c_str());
-    return ((uint8_t*)ptr + 8);
+    std::memcpy(buffer, ptr + espHeaderSize, size);
+    return true;
 }
 
 bool ESP8266::switchToAP()
@@ -262,7 +254,7 @@ bool ESP8266::setAP(const char *ssid, const char *pass) {
     EspAtCommand cmd("AT+CWSAP=");
     cmd.add(ssid).add(pass).add(channel).add(WPA2_PSK);
 
-    sendCommand(cmd.string(), true);
+    sendCommand(cmd);
     return waitForAnswer("OK", 5000);
 }
 
@@ -270,7 +262,7 @@ bool ESP8266::SendString(const char *str)
 {
     EspAtCommand cmd("AT+CIPSEND=");
     cmd.add(strlen(str));
-    sendCommand(cmd.string(), true);
+    sendCommand(cmd);
     if (!waitForAnswer(">", 1000)) {
         return false;
     }
@@ -284,7 +276,7 @@ bool ESP8266::SendString(const char *str, const char *ip, uint16_t port)
     EspAtCommand cmd("AT+CIPSEND=");
     cmd.add(strlen(str)).add(ip).add(port);
 
-    sendCommand(cmd.string(), true);
+    sendCommand(cmd);
     if (!waitForAnswer(">", 1000)) {
         return false;
     }
@@ -318,7 +310,7 @@ bool ESP8266::setAPip(const char *ip) {
     EspAtCommand cmd("AT+CIPAP=");
     cmd.add(ip);
 
-    sendCommand(cmd.string(), true);
+    sendCommand(cmd);
     return waitForAnswer("OK", 5000);
 }
 

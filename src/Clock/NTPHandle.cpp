@@ -1,92 +1,105 @@
 #include "NTPHandle.h"
 
-#include "ESP8266.h"
 #include <cstring>
 #include <array>
+#include <ctime>
 
-namespace {
-const int mins_in_hour = 60;
-const int secs_to_min = 60;
-std::array<uint8_t, 48> ntpRequset = { 0x1B, 0, 0, 0, 0, 0, 0, 0, 0 };
+#include "ESP8266.h"
+#include "Logger.h"
+#include "SString.h"
+
+namespace
+{
+    constexpr uint64_t NTP_TIMESTAMP_DELTA = 2208988800;
 }
 
-
-void NTPHandle::delay(uint32_t ticks) const {
-	for (uint32_t i = 0; i < ticks; i++) {
-		asm("nop");
-	}
+void NTPHandle::init(ESP8266 *wifi)
+{
+    mWifi = wifi;
 }
 
-void NTPHandle::init(ESP8266 *wifi) {
-	mWifi = wifi;
-	mNtpAnswer = {};
+bool NTPHandle::getNtpRequest()
+{
+    std::array<uint8_t, 48> ntpRequset = {0x1B, 0, 0, 0, 0, 0, 0, 0, 0};
+    mNtpAnswer = {};
+
+    Logger::log("Sending ntp request");
+    mWifi->sendUDPpacket((char *)ntpRequset.data(), ntpRequset.size());
+
+    Logger::log("Waiting ntp packet");
+
+    std::array<uint8_t, 48> ntpBuffer;
+    if (!mWifi->getData(ntpBuffer.data(), ntpBuffer.size())) {
+        Logger::log("Ntp packet receive failed");
+        return false;
+    }
+
+    std::memcpy(&mNtpAnswer, ntpBuffer.data(), sizeof(mNtpAnswer));
+    mTimestampMs = (htonl(mNtpAnswer.txTm_s) - NTP_TIMESTAMP_DELTA);
+    return true;
 }
 
-bool NTPHandle::getNtpRequest() {
-	mWifi->sendUDPpacket((char *)ntpRequset.data(), ntpRequset.size());
-	mWifi->clearBuffer();
-	HAL_Delay(100);
-	// delay(100000);
-	uint8_t *ptr = mWifi->getData(48);
-	HAL_Delay(100);
-	// delay(100000);
-	if (!ptr) {
-		return false;
-	}
+bool NTPHandle::updateTime()
+{
+    Logger::log("Convert timestamp to time");
+    std::time_t timestamp = mTimestampMs;
+    std::tm *timeVal = std::gmtime(&timestamp);
+    if (!timeVal)
+    {
+        Logger::log("Convert timestamp failed");
+        return false;
+    }
 
-	std::memcpy(&mNtpAnswer, ptr, sizeof(mNtpAnswer));
-	mSecondsFromStart = (htonl(mNtpAnswer.txTm_s) - NTP_TIMESTAMP_DELTA) % 86400;
-	mWifi->clearBuffer();
-	mNtpAnswer = {};
-	return true;
+    mHours = timeVal->tm_hour;
+    mMinutes = timeVal->tm_min;
+    mSeconds = timeVal->tm_sec;
+
+    SString<100> str;
+    str.appendNumber(mHours).append(":").appendNumber(mMinutes).append(":").appendNumber(mSeconds);
+    Logger::log(str.c_str());
+    return true;
 }
 
-bool NTPHandle::getTime() {
-	if (mSecondsFromStart) {
-		mSeconds = mSecondsFromStart % secs_to_min;
-		mMinutes = mSecondsFromStart / secs_to_min % mins_in_hour;
-		mHours = (mSecondsFromStart / secs_to_min / mins_in_hour);
-		mSecondsFromStart = 0;
-		return true;
-	}
-	return false;
+uint8_t NTPHandle::getHours()
+{
+    return mHours;
 }
 
-uint8_t NTPHandle::getHours() {
-	return mHours;
+uint8_t NTPHandle::getMinutes()
+{
+    return mMinutes;
 }
 
-uint8_t NTPHandle::getMinutes() {
-	return mMinutes;
-}
-
-uint8_t NTPHandle::getSeconds() {
-	return mSeconds;
+uint8_t NTPHandle::getSeconds()
+{
+    return mSeconds;
 }
 
 bool NTPHandle::process(const char *server)
 {
-	if (!mWifi->isConnected()) {
-		return false;
-	}
-
-	if(!mWifi->connectToServerUDP(server, 123)){
-		return false;
-	}
-
-    for (int i = 0; i < 2; i++) {
-        getNtpRequest();
-        delay(6000000);
-        if (getTime()) {
-			return true;
-        }
+    if (!mWifi->isConnected())
+    {
+        return false;
     }
 
-	return false;
+    if (!mWifi->connectToServerUDP(server, 123))
+    {
+        return false;
+    }
+
+    for (uint8_t i = 0; i < 2; ++i) {
+        if (getNtpRequest()) {
+            if (updateTime()) {
+                return true;
+            }
+        }
+        HAL_Delay(2000);
+    }
+
+    return false;
 }
 
 uint32_t NTPHandle::htonl(uint32_t val) const
 {
-	val = ((((val) >> 24) & 0xff) | (((val) >> 8) & 0xff00) | (((val) << 8) & 0xff0000) | (((val) << 24) & 0xff000000));
-	return val;
+    return __builtin_bswap32(val);
 }

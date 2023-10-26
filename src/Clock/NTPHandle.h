@@ -4,7 +4,6 @@
 
 class ESP8266;
 
-#define NTP_TIMESTAMP_DELTA 2208988800ull
 class NTPHandle
 {
 public:
@@ -19,7 +18,7 @@ public:
 
 private:
     bool getNtpRequest();
-    bool getTime();
+    bool updateTime();
     uint32_t htonl(uint32_t val) const;
     void delay(uint32_t ticks) const;
 
@@ -54,4 +53,5 @@ private:
     uint8_t mSeconds = 0;
     uint8_t mTimeZone = 0;
     uint32_t mSecondsFromStart = 0;
+    int64_t mTimestampMs = 0;
 };

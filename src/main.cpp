@@ -135,8 +135,8 @@ int main(void)
     // wifi.getIP();
     // wifi.clearBuffer();
 
-    Clock.init(&wifi);
     Clock.setTimeZone(3);
+    Clock.init(&wifi);
 
     for (;;)
     {
