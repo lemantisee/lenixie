@@ -1,4 +1,3 @@
-// #include "stm32f1xx_hal_conf.h"
 #include "stm32f1xx.h"
 #include "stm32f1xx_hal_uart.h"
 
@@ -14,9 +13,10 @@
 
 namespace
 {
-    volatile uint16_t rtcTubePeriod = 0;
+    volatile uint32_t rtcTubePeriod = 0;
     volatile bool testBlinkStart = false;
     volatile uint16_t testTimer = 0;
+    uint16_t sysTicks = 0;
 
     DynamicIndication Indication;
     RTClock Clock;
@@ -60,6 +60,8 @@ namespace
         PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_RTC;
         PeriphClkInit.RTCClockSelection = RCC_RTCCLKSOURCE_LSE;
         HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit);
+
+        HAL_SYSTICK_Config(F_CPU / 20000 - 1);
     }
 } // namespace
 
@@ -67,16 +69,25 @@ extern "C"
 {
     void SysTick_Handler()
     {
-        HAL_IncTick();
+        // called every 50us
         HAL_SYSTICK_IRQHandler();
+
+        ++sysTicks;
+        if (sysTicks == 20) {
+            // called every 1ms
+            sysTicks = 0;
+            HAL_IncTick();
+        }
+
         Indication.process();
 
         ++rtcTubePeriod;
-        if (rtcTubePeriod == 1000)
+        if (rtcTubePeriod == 20000)
         {
             rtcTubePeriod = 0;
             const RTClock::Time &time = Clock.getTime();
             Indication.setNumber(time.hours / 10, time.hours % 10, time.minutes / 10, time.minutes % 10);
+            Indication.dimm(time.hours < 7);
         }
     }
 
@@ -122,26 +133,8 @@ int main(void)
             Logger::log("Unable to connect to network");
         }
     }
-        // if (!wifi.isConnected()) {
-    //     // Logger::instance().log("Cannot connect ot wifi\n");
-    //     wifi.switchToAP();
-    // } else {
-    //     // Logger::instance().log("Connected ot wifi\n");
-    //     Clock.syncTime(ntpServer);
-    // }
 
     // protocol.init(&wifi);
-
-    // if (!wifi.isConnected()) {
-    //     // Logger::instance().log("Cannot connect ot wifi\n");
-    //     wifi.switchToAP();
-    // } else {
-    //     // Logger::instance().log("Connected ot wifi\n");
-    //     Clock.syncTime(ntpServer);
-    // }
-
-    // wifi.getIP();
-    // wifi.clearBuffer();
 
     Clock.setTimeZone(3);
     Clock.init(&wifi);

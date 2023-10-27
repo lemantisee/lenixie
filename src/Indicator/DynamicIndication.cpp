@@ -3,6 +3,20 @@
 #include "Logger.h"
 #include "SString.h"
 
+namespace
+{
+    constexpr uint16_t indicationFrameTime = 320; // 16ms
+    constexpr uint16_t fullBrightnessTime = 50; // 3 ms
+    constexpr uint8_t dimmedTime = 4; // 200us
+    constexpr uint32_t fadeTime = 10000; //500ms
+} // namespace
+
+DynamicIndication::DynamicIndication()
+{
+    mSigns.back().isDummy = true;
+    mSingOnTime = fullBrightnessTime;
+}
+
 void DynamicIndication::setDecoderPins(GPIO_TypeDef *port, uint16_t Apin, uint16_t Bpin, uint16_t Cpin, uint16_t Dpin)
 {
     mDecoder.init(port, Apin, Bpin, Cpin, Dpin);
@@ -30,12 +44,32 @@ void DynamicIndication::setSign(Tube tube, GPIO_TypeDef *port, uint16_t pin)
 
 void DynamicIndication::process()
 {
+    // called every 50us
+
+    updateDimm();
+
     if (const Sign *sign = getCurrentSign())
     {
         clearSigns();
-        HAL_GPIO_WritePin(sign->port, sign->pin, GPIO_PIN_SET);
-        mDecoder.setValue(sign->number);
+        if (!sign->isDummy) {
+            HAL_GPIO_WritePin(sign->port, sign->pin, GPIO_PIN_SET);
+            mDecoder.setValue(sign->number);
+        }
+
     }
+}
+
+void DynamicIndication::dimm(bool state)
+{
+    if (state && mVisualStage == Dimmed) {
+        return;
+    }
+
+    if (!state && mVisualStage == FullBrightness) {
+        return;
+    }
+
+    mVisualStage = state ? FadeIn : FadeOut;
 }
 
 void DynamicIndication::setNumber(uint8_t number1, uint8_t number2, uint8_t number3, uint8_t number4)
@@ -62,20 +96,58 @@ void DynamicIndication::clearSigns()
 const DynamicIndication::Sign *DynamicIndication::getCurrentSign()
 {
     ++mTimer;
-    const uint8_t indicationPeriod = 4;
 
     for (uint8_t i = 0; i < mSigns.size(); ++i)
     {
-        if (mTimer == (i * indicationPeriod + 1))
+        if (mTimer == (i * mSingOnTime + 1))
         {
             return &mSigns[i];
         }
     }
 
-    if (mTimer >= (indicationPeriod * mSigns.size() + 1))
+    if (mTimer >= indicationFrameTime + 1)
     {
         mTimer = 0;
     }
 
     return nullptr;
+}
+
+void DynamicIndication::updateDimm()
+{
+    if (mVisualStage != FadeIn && mVisualStage != FadeOut) {
+        return;
+    }
+
+    const uint32_t range = fullBrightnessTime - dimmedTime;
+    const uint32_t timeStep = fadeTime / range;
+
+    ++mFadeTime;
+    for (uint32_t r = 0; r < range; ++r) {
+        if (r * timeStep == mFadeTime) {
+            if (mVisualStage == FadeIn) {
+                --mSingOnTime;
+            } else if (mVisualStage == FadeOut) {
+                ++mSingOnTime;
+            }
+            break;
+        }
+    }
+
+    if (mFadeTime != fadeTime) {
+        return;
+    }
+
+    mFadeTime = 0;
+
+    if (mVisualStage == FadeIn) {
+        mSingOnTime = dimmedTime;
+        mVisualStage = Dimmed;
+        return;
+    } 
+    
+    if (mVisualStage == FadeOut) {
+        mSingOnTime = fullBrightnessTime;
+        mVisualStage = FullBrightness;
+    }
 }
