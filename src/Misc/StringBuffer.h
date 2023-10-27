@@ -2,11 +2,16 @@
 
 #include <array>
 #include <cstring>
+#include <optional>
 
 template <uint32_t N>
 class StringBuffer
 {
 public:
+    char &operator[](uint32_t index) {
+        return mBuffer[index];
+    }
+
     bool append(char c)
     {
         if (mCurrentByte < mBuffer.size() - 1)
@@ -72,6 +77,19 @@ public:
 
     bool contains(const char *substr) const {
         return std::strstr(mBuffer.data(), substr) != nullptr;
+    }
+
+    std::optional<uint32_t> find(const char *substr, uint32_t fromPos = 0) const{
+        if (fromPos >= mBuffer.size()) {
+            return std::nullopt;
+        }
+
+        const char *mBufferStr = mBuffer.data() + fromPos;
+        if (const char *ptr = strstr(mBufferStr, substr)) {
+            return uint32_t(ptr - mBufferStr);
+        }
+
+        return std::nullopt;
     }
 
 private:

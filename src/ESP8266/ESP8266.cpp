@@ -13,46 +13,36 @@ namespace
 } // namespace
 
 
-void ESP8266::init(USART_TypeDef *usart, uint32_t baudrate)
+bool ESP8266::init(USART_TypeDef *usart, uint32_t baudrate)
 {
 #if USE_HAL_UART_REGISTER_CALLBACKS != 1
 #error "Error. USART callback not enabled"
 #endif
     wifiInstance = this;
-    answerReady = false;
-    mTimeout = false;
 
-    mUart.Instance = usart;
-    mUart.Init.BaudRate = baudrate;
-    mUart.Init.WordLength = UART_WORDLENGTH_8B;
-    mUart.Init.StopBits = UART_STOPBITS_1;
-    mUart.Init.Parity = UART_PARITY_NONE;
-    mUart.Init.Mode = UART_MODE_TX_RX;
-    mUart.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-    mUart.Init.OverSampling = UART_OVERSAMPLING_16;
-    HAL_UART_Init(&mUart);
-    HAL_UART_RegisterRxEventCallback(&mUart, ESP8266::uartReceiveCallback);
+    if (!setupUart(usart, baudrate)) {
+        return false;
+    }
 
-    startReadUart();
+    if (!startReadUart()) {
+        return false;
+    }
 
     HAL_Delay(500);
 
-    Logger::log("Reseting wifi");
-    reset();
+    if (!enableEcho(false)) {
+        return false;
+    }
 
-    sendCommand("ATE0", true); //echo off
-    waitForAnswer("OK", 1000);
+    if (!enableMultipleConnections(false)) {
+        return false;
+    }
 
-    test();
+    if (!setMode(Station)) {
+        return false;
+    }
 
-    EspAtCommand cmd("AT+CIPMUX=");
-    cmd.add(uint32_t(0));
-    sendCommand(cmd);
-    waitForAnswer("OK", 2000);
-
-    setMode(Station);
-
-    Logger::log("Wifi inited");
+    return true;
 }
 
 void ESP8266::sendCommand(const char *cmd, bool sendEnd) {
@@ -74,10 +64,28 @@ void ESP8266::uartInterrupt()
     HAL_UART_IRQHandler(&mUart);
 }
 
-void ESP8266::startReadUart()
+bool ESP8266::setupUart(USART_TypeDef *usart, uint32_t baudrate)
+{
+    mUart.Instance = usart;
+    mUart.Init.BaudRate = baudrate;
+    mUart.Init.WordLength = UART_WORDLENGTH_8B;
+    mUart.Init.StopBits = UART_STOPBITS_1;
+    mUart.Init.Parity = UART_PARITY_NONE;
+    mUart.Init.Mode = UART_MODE_TX_RX;
+    mUart.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+    mUart.Init.OverSampling = UART_OVERSAMPLING_16;
+
+    if (HAL_UART_Init(&mUart) != HAL_OK ) {
+        return false;
+    }
+
+    return HAL_UART_RegisterRxEventCallback(&mUart, ESP8266::uartReceiveCallback) == HAL_OK;
+}
+
+bool ESP8266::startReadUart()
 {
     mInputBuffer.clear();
-    HAL_UARTEx_ReceiveToIdle_IT(&mUart, (uint8_t *)mInputBuffer.data(), mInputBuffer.size());
+    return HAL_UARTEx_ReceiveToIdle_IT(&mUart, (uint8_t *)mInputBuffer.data(), mInputBuffer.size()) == HAL_OK;
 }
 
 bool ESP8266::setMode(Mode mode)
@@ -94,13 +102,10 @@ bool ESP8266::setMode(Mode mode)
     switch (mMode)
     {
     case Station:
-        Logger::log("Sending to ESP AT+CWMODE=1");
         break;
     case SoftAP:
-        Logger::log("Sending to ESP AT+CWMODE=2");
         break;
     case StationAndSoftAP:
-        Logger::log("Sending to ESP AT+CWMODE=3");
         break;
     default:
         return false;
@@ -137,8 +142,6 @@ bool ESP8266::connectNetwork(const char* ssid, const char* password) {
         return false;
     }
 
-    Logger::log("Connecting to wifi network with command");
-
     EspAtCommand cmd("AT+CWJAP_CUR=");
     cmd.add(ssid).add(password);
     Logger::log(cmd.string());
@@ -148,7 +151,6 @@ bool ESP8266::connectNetwork(const char* ssid, const char* password) {
 }
 
 bool ESP8266::test() {
-    Logger::log("Send command AT");
     sendCommand("AT", true);
     return waitForAnswer("OK", 1000);
 }
@@ -184,6 +186,12 @@ bool ESP8266::sendUDPpacket(const char* msg, uint16_t size)
 
 bool ESP8266::getIP() {
     //AT + CIFSR
+
+    char ipoctet1[4];
+	char ipoctet2[4];
+	char ipoctet3[4];
+	char ipoctet4[4];
+
     memset(broadcastIP, 0, 17);
     memset(ipoctet1, 0, 4);
     memset(ipoctet2, 0, 4);
@@ -301,9 +309,26 @@ void ESP8266::clearBuffer()
 }
 
 void ESP8266::closeCurrentConnection() {
-    Logger::log("Closing current connection");
     sendCommand("AT+CIPCLOSE", true);
     waitForAnswer("OK", 1000);
+}
+
+bool ESP8266::enableEcho(bool state)
+{
+    EspAtCommand cmd("ATE");
+    cmd.add(state ? uint32_t(1) : uint32_t(0));
+    sendCommand(cmd);
+
+    return waitForAnswer("OK", 1000);
+}
+
+bool ESP8266::enableMultipleConnections(bool state)
+{
+    EspAtCommand cmd("AT+CIPMUX=");
+    cmd.add(state ? uint32_t(1) : uint32_t(0));
+    sendCommand(cmd);
+
+    return waitForAnswer("OK", 2000);
 }
 
 bool ESP8266::setAPip(const char *ip) {
@@ -314,10 +339,9 @@ bool ESP8266::setAPip(const char *ip) {
     return waitForAnswer("OK", 5000);
 }
 
-void ESP8266::reset() {
+bool ESP8266::reset() {
     sendCommand("AT+RST", true);
-    HAL_Delay(10000);
-    Logger::log("Wifi reset complete");
+    return waitForAnswer("OK", 10000);
 }
 
 void ESP8266::uartReceiveCallback(UART_HandleTypeDef *uart, uint16_t size)
@@ -332,5 +356,33 @@ void ESP8266::uartReceiveCallback(UART_HandleTypeDef *uart, uint16_t size)
 
 bool ESP8266::isConnected() {
     sendCommand("AT+CIPSTATUS", true);
-    return waitForAnswer("STATUS:2", 3000, "STATUS:3");
+
+    const uint32_t timeout = 3000 + HAL_GetTick();
+    const char *statusStr = "STATUS:";
+    const uint32_t statusStrSize = std::strlen(statusStr);
+    std::optional<uint32_t> posOpt = 0;
+
+    while ((HAL_GetTick() < timeout)) {
+        posOpt = mBuffer.find(statusStr);
+
+        if (posOpt && mBuffer.capacity() > statusStrSize) {
+            break;
+        }
+
+        asm("nop");
+    }
+
+    if (!posOpt) {
+        return false;
+    }
+
+    const uint32_t pos = *posOpt + std::strlen(statusStr);
+
+    if (pos >=  mBuffer.capacity()) {
+        return false;
+    }
+
+    char statusChar = mBuffer[pos];
+
+    return statusChar == '2' || statusChar == '3';
 }

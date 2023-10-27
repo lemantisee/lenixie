@@ -17,7 +17,7 @@ public:
 
 	ESP8266() = default;
 
-	void init(USART_TypeDef *usart, uint32_t baudrate);
+	bool init(USART_TypeDef *usart, uint32_t baudrate);
 
 	bool isConnected();
 	bool connectNetwork(const char* ssid, const char* password);
@@ -47,30 +47,26 @@ private:
 		WPA_WPA2_PSK = 4,
 	};
 
-	void startReadUart();
+	bool setupUart(USART_TypeDef *usart, uint32_t baudrate);
+	bool startReadUart();
 	bool setMode(Mode mode);
 	bool setAP(const char *ssid, const char *pass);
 	void sendCommand(const char *cmd, bool sendEnd = false);
 	void sendCommand(const EspAtCommand &cmd);
 	bool waitForAnswer(const char *answer1, uint16_t timeout, const char *answer2 = nullptr);
 	bool test();
-	void reset();
+	bool reset();
 	void clearBuffer();
 	bool getIP();
 	void closeCurrentConnection();
+	bool enableEcho(bool state);
+	bool enableMultipleConnections(bool state);
 	
 	static void uartReceiveCallback(UART_HandleTypeDef *uart, uint16_t size);
 	
 	UART_HandleTypeDef mUart;
 	StringBuffer<255> mBuffer;
 	StringBuffer<64> mInputBuffer;
-	bool answerReady = false;
-	Mode mMode = Unknown;
-	bool mTimeout = false;
-	char ipoctet1[4];
-	char ipoctet2[4];
-	char ipoctet3[4];
-	char ipoctet4[4];
-	
+	Mode mMode = Unknown;	
 };
 

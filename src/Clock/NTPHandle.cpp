@@ -26,8 +26,6 @@ bool NTPHandle::getNtpRequest()
     Logger::log("Sending ntp request");
     mWifi->sendUDPpacket((char *)ntpRequset.data(), ntpRequset.size());
 
-    Logger::log("Waiting ntp packet");
-
     std::array<uint8_t, 48> ntpBuffer;
     if (!mWifi->getData(ntpBuffer.data(), ntpBuffer.size())) {
         Logger::log("Ntp packet receive failed");
@@ -41,7 +39,6 @@ bool NTPHandle::getNtpRequest()
 
 bool NTPHandle::updateTime()
 {
-    Logger::log("Convert timestamp to time");
     std::time_t timestamp = mTimestampMs;
     std::tm *timeVal = std::gmtime(&timestamp);
     if (!timeVal)
@@ -55,7 +52,7 @@ bool NTPHandle::updateTime()
     mSeconds = timeVal->tm_sec;
 
     SString<100> str;
-    str.appendNumber(mHours).append(":").appendNumber(mMinutes).append(":").appendNumber(mSeconds);
+    str.append("NTP time: ").appendNumber(mHours).append(":").appendNumber(mMinutes).append(":").appendNumber(mSeconds);
     Logger::log(str.c_str());
     return true;
 }

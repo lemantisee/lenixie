@@ -110,9 +110,17 @@ int main(void)
 
     Logger::log("Started");
 
-    wifi.init(USART1, 115200);
+    if (!wifi.init(USART1, 115200)) {
+        Logger::log("Unable to init wifi");
+    }
+    
     if (!wifi.isConnected()) {
-        wifi.connectNetwork(WifiCredentials::userSsid(), WifiCredentials::userPassword());
+        SString<255> str;
+        str.append("Connecting to wifi network ").append("\"").append(WifiCredentials::userSsid()).append("\"");
+        Logger::log(str.c_str());
+        if(!wifi.connectNetwork(WifiCredentials::userSsid(), WifiCredentials::userPassword())){
+            Logger::log("Unable to connect to network");
+        }
     }
         // if (!wifi.isConnected()) {
     //     // Logger::instance().log("Cannot connect ot wifi\n");
