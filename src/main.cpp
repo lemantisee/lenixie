@@ -13,9 +13,8 @@
 
 namespace
 {
-    volatile uint32_t rtcTubePeriod = 0;
     volatile bool testBlinkStart = false;
-    volatile uint16_t testTimer = 0;
+    volatile uint8_t testTimer = 0;
     uint16_t sysTicks = 0;
 
     DynamicIndication Indication;
@@ -80,15 +79,14 @@ extern "C"
         }
 
         Indication.process();
+    }
 
-        ++rtcTubePeriod;
-        if (rtcTubePeriod == 20000)
-        {
-            rtcTubePeriod = 0;
-            const RTClock::Time &time = Clock.getTime();
-            Indication.setNumber(time.hours / 10, time.hours % 10, time.minutes / 10, time.minutes % 10);
-            Indication.dimm(time.hours < 7);
-        }
+    void RTC_IRQHandler()
+    {
+        Clock.interrupt();
+        const RTClock::Time &time = Clock.getTime();
+        Indication.setNumber(time.hours / 10, time.hours % 10, time.minutes / 10, time.minutes % 10);
+        Indication.dimm(time.hours < 7);
     }
 
     void USART1_IRQHandler()

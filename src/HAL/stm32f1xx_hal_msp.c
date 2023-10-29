@@ -32,6 +32,9 @@ void HAL_RTC_MspInit(RTC_HandleTypeDef *hrtc)
     HAL_PWR_EnableBkUpAccess();
     __HAL_RCC_BKP_CLK_ENABLE();
     __HAL_RCC_RTC_ENABLE();
+
+    HAL_NVIC_SetPriority(RTC_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(RTC_IRQn);
   }
 }
 

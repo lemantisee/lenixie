@@ -30,6 +30,8 @@ bool ESP8266::init(USART_TypeDef *usart, uint32_t baudrate)
 
     HAL_Delay(500);
 
+    reset();
+
     if (!enableEcho(false)) {
         return false;
     }
@@ -341,7 +343,7 @@ bool ESP8266::setAPip(const char *ip) {
 
 bool ESP8266::reset() {
     sendCommand("AT+RST", true);
-    return waitForAnswer("OK", 10000);
+    HAL_Delay(10000);
 }
 
 void ESP8266::uartReceiveCallback(UART_HandleTypeDef *uart, uint16_t size)
