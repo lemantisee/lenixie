@@ -65,7 +65,7 @@ const RTClock::Time &RTClock::getTime()
 
     int8_t hours = int8_t(time.Hours) + calculateDST(data.Month - 1, data.Date, data.WeekDay, time.Hours);
     if (hours < 0) {
-        hours = 24 - hours;
+        hours = 24 - std::abs(hours);
     }
 
     mTime.seconds = time.Seconds;
