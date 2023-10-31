@@ -1,5 +1,8 @@
 #include "RTClock.h"
 
+#include "SString.h"
+#include "Logger.h"
+
 namespace
 {
     constexpr uint32_t ntpPeriodSync = 43200000;
@@ -40,15 +43,25 @@ const RTClock::Time &RTClock::getTime()
         return mTime;
     }
 
-    RTC_DateTypeDef data;
-    HAL_RTC_GetDate(&mHandle, &data, RTC_FORMAT_BIN);
+    RTC_DateTypeDef data = {0};
+    if (HAL_RTC_GetDate(&mHandle, &data, RTC_FORMAT_BIN) != HAL_OK) {
+        Logger::log("Unable to get date from rtc");
+        return mTime;
+    }
 
-    if(data.WeekDay == 0) {
+    SString<100> str;
+    str.append("Date is ").appendNumber(data.Month).append("-").appendNumber(data.Date).append("-").appendNumber(data.WeekDay);
+    Logger::log(str.c_str());
+
+    if (data.WeekDay == 0) {
         data.WeekDay = 7;
     }
 
-    RTC_TimeTypeDef time;
-    HAL_RTC_GetTime(&mHandle, &time, RTC_FORMAT_BIN);
+    RTC_TimeTypeDef time = {0};
+    if (HAL_RTC_GetTime(&mHandle, &time, RTC_FORMAT_BIN) != HAL_OK) {
+        Logger::log("Unable to get time from rtc");
+        return mTime;
+    }
 
     int8_t hours = int8_t(time.Hours) + calculateDST(data.Month - 1, data.Date, data.WeekDay, time.Hours);
     if (hours < 0) {
@@ -68,7 +81,7 @@ void RTClock::process()
         return;
     }
 
-    if (mLastNtpSyncTime + ntpPeriodSync > HAL_GetTick()) {
+    if (mLastNtpSyncTime + ntpPeriodSync < HAL_GetTick()) {
         mLastNtpSyncTime = HAL_GetTick();
         syncTime(ntpServer);
     }
@@ -107,7 +120,7 @@ bool RTClock::setRtcDate(uint32_t year, uint8_t month, uint8_t mday, uint8_t wda
     data.Month = month + 1;
     data.Date = mday;
     data.Year = year - 2000;
-    return HAL_RTC_SetDate(&mHandle, &data, RTC_FORMAT_BCD) == HAL_OK;
+    return HAL_RTC_SetDate(&mHandle, &data, RTC_FORMAT_BIN) == HAL_OK;
 }
 
 int8_t RTClock::calculateDST(uint8_t month, uint8_t monthday, uint8_t weekday, uint8_t hours)
@@ -116,18 +129,18 @@ int8_t RTClock::calculateDST(uint8_t month, uint8_t monthday, uint8_t weekday, u
     // set back 1 hour on the last week of October on 3am
     // set forward 1 hour on the last week of March on 4am
 
-    if (month > 9 && month < 2) {
+    if (month > 9 || month < 2) {
         return -1;
     }
 
-    if (month < 8 && month > 2) {
+    if (month > 2 && month < 8) {
         return 0;
     }
 
     if (month == 9) {
-        const uint8_t lastDay = getLastDayOfWeek(monthday, weekday);
+        const uint8_t lastSunday = getLastSunday(monthday, weekday);
 
-        if (monthday > lastDay || (monthday == lastDay && hours >= 3)) {
+        if (monthday > lastSunday || (monthday == lastSunday && hours >= 3)) {
             return -1;
         }
 
@@ -135,7 +148,7 @@ int8_t RTClock::calculateDST(uint8_t month, uint8_t monthday, uint8_t weekday, u
     }
 
     if (month == 2) {
-        const uint8_t lastDay = getLastDayOfWeek(monthday, weekday);
+        const uint8_t lastDay = getLastSunday(monthday, weekday);
 
         if (monthday > lastDay || (monthday == lastDay && hours >= 3)) {
             return 0;
@@ -147,7 +160,7 @@ int8_t RTClock::calculateDST(uint8_t month, uint8_t monthday, uint8_t weekday, u
     return 0;
 }
 
-uint8_t RTClock::getLastDayOfWeek(uint8_t monthday, uint8_t weekday) const
+uint8_t RTClock::getLastSunday(uint8_t monthday, uint8_t weekday) const
 {
     // March and October has 31 days
     // we interested in period from 25 day
@@ -157,7 +170,12 @@ uint8_t RTClock::getLastDayOfWeek(uint8_t monthday, uint8_t weekday) const
         return monthday;
     }
 
-    return monthday + 7 - weekday;
+    uint8_t forwardDay = monthday + 7 - weekday;
+    if (forwardDay <= 31) {
+        return forwardDay;
+    }
+
+    return monthday - weekday;
 }
 
 void RTClock::setTimeZone(uint8_t timezone)

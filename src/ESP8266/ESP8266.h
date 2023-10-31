@@ -18,6 +18,7 @@ public:
 	ESP8266() = default;
 
 	bool init(USART_TypeDef *usart, uint32_t baudrate);
+	void process();
 
 	bool isConnected();
 	bool connectNetwork(const char* ssid, const char* password);
@@ -67,6 +68,9 @@ private:
 	UART_HandleTypeDef mUart;
 	StringBuffer<255> mBuffer;
 	StringBuffer<64> mInputBuffer;
-	Mode mMode = Unknown;	
+	Mode mMode = Unknown;
+	uint32_t mLastConnectionCheck = 0;
+	const char *mStationSSIDWasConnected = nullptr;
+	const char *mStationPswWasConnected = nullptr;
 };
 

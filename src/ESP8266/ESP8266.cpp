@@ -9,6 +9,7 @@
 
 namespace
 {
+    constexpr uint32_t checkConnectionPeriodMs = 30 * 60 * 1000; // 30 min
     ESP8266 *wifiInstance = nullptr;
 } // namespace
 
@@ -30,7 +31,7 @@ bool ESP8266::init(USART_TypeDef *usart, uint32_t baudrate)
 
     HAL_Delay(500);
 
-    reset();
+    // reset();
 
     if (!enableEcho(false)) {
         return false;
@@ -45,6 +46,30 @@ bool ESP8266::init(USART_TypeDef *usart, uint32_t baudrate)
     }
 
     return true;
+}
+
+void ESP8266::process()
+{
+    if (mMode != Station && mMode != StationAndSoftAP) {
+        return;
+    }
+
+    if (mLastConnectionCheck + checkConnectionPeriodMs > HAL_GetTick()) {
+        return;
+    }
+
+    mLastConnectionCheck = HAL_GetTick();
+
+    if (isConnected()) {
+        return;
+    }
+
+    if (!connectNetwork(mStationSSIDWasConnected, mStationPswWasConnected)) {
+        Logger::log("Unable to connect to previuos wifi");
+        return;
+    }
+
+    Logger::log("Reconnected to previuos wifi");
 }
 
 void ESP8266::sendCommand(const char *cmd, bool sendEnd) {
@@ -149,7 +174,13 @@ bool ESP8266::connectNetwork(const char* ssid, const char* password) {
     Logger::log(cmd.string());
 
     sendCommand(cmd);
-    return waitForAnswer("OK", 20000);
+    const bool ok = waitForAnswer("OK", 20000);
+    if (ok) {
+        mStationSSIDWasConnected = ssid;
+        mStationPswWasConnected = password;
+    }
+
+    return ok;
 }
 
 bool ESP8266::test() {
@@ -357,6 +388,10 @@ void ESP8266::uartReceiveCallback(UART_HandleTypeDef *uart, uint16_t size)
 }
 
 bool ESP8266::isConnected() {
+    if (mMode != Station && mMode != StationAndSoftAP) {
+        return false;
+    }
+
     sendCommand("AT+CIPSTATUS", true);
 
     const uint32_t timeout = 3000 + HAL_GetTick();
@@ -385,6 +420,9 @@ bool ESP8266::isConnected() {
     }
 
     char statusChar = mBuffer[pos];
+
+    HAL_Delay(500);
+    Logger::log(mBuffer.c_str());
 
     return statusChar == '2' || statusChar == '3';
 }

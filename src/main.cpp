@@ -139,7 +139,8 @@ int main(void)
 
     for (;;)
     {
-        continue;
+        Clock.process();
+        wifi.process();
         // Clock.process();
         //		if (testBlinkStart) {
         //			Indication.startIndication(updateClock);
