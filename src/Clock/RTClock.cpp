@@ -34,11 +34,12 @@ void RTClock::init(ESP8266 *wifi)
     mHandle.Instance = RTC;
     mHandle.Init.AsynchPrediv = RTC_AUTO_1_SECOND;
     mHandle.Init.OutPut = RTC_OUTPUTSOURCE_NONE;
-    HAL_RTC_Init(&mHandle);
-    __HAL_RTC_ALARM_ENABLE_IT(&mHandle, RTC_IT_SEC);
 
     HAL_RTC_RegisterCallback(&mHandle, HAL_RTC_MSPINIT_CB_ID, &rtcInit);
     HAL_RTC_RegisterCallback(&mHandle, HAL_RTC_MSPDEINIT_CB_ID, &rtcDeinit);
+    
+    HAL_RTC_Init(&mHandle);
+    __HAL_RTC_ALARM_ENABLE_IT(&mHandle, RTC_IT_SEC);
 
     mNtp.init(wifi);
     mInited = true;

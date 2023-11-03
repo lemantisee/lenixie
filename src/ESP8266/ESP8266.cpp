@@ -102,19 +102,19 @@ bool ESP8266::setupUart(USART_TypeDef *usart, uint32_t baudrate)
     mUart.Init.HwFlowCtl = UART_HWCONTROL_NONE;
     mUart.Init.OverSampling = UART_OVERSAMPLING_16;
 
-    if (HAL_UART_Init(&mUart) != HAL_OK ) {
-        return false;
-    }
-
-    if (HAL_UART_RegisterRxEventCallback(&mUart, ESP8266::uartReceiveCallback) != HAL_OK ) {
-        return false;
-    }
-
     if (HAL_UART_RegisterCallback(&mUart, HAL_UART_MSPINIT_CB_ID, ESP8266::uartInitCallback) != HAL_OK ) {
         return false;
     }
 
     if (HAL_UART_RegisterCallback(&mUart, HAL_UART_MSPDEINIT_CB_ID, ESP8266::uartDeinitCallback) != HAL_OK ) {
+        return false;
+    }
+
+    if (HAL_UART_Init(&mUart) != HAL_OK ) {
+        return false;
+    }
+
+    if (HAL_UART_RegisterRxEventCallback(&mUart, ESP8266::uartReceiveCallback) != HAL_OK ) {
         return false;
     }
 

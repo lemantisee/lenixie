@@ -23,10 +23,12 @@ void Logger::init(USART_TypeDef *usart, uint32_t baudrate)
     mUsart.Init.Mode = UART_MODE_TX_RX;
     mUsart.Init.HwFlowCtl = UART_HWCONTROL_NONE;
     mUsart.Init.OverSampling = UART_OVERSAMPLING_16;
-    HAL_UART_Init(&mUsart);
-    HAL_UART_RegisterRxEventCallback(&mUsart, Logger::uartReceiveCallback);
+    
     HAL_UART_RegisterCallback(&mUsart, HAL_UART_MSPINIT_CB_ID, Logger::uartInitCallback);
     HAL_UART_RegisterCallback(&mUsart, HAL_UART_MSPDEINIT_CB_ID, Logger::uartDeinitCallback);
+
+    HAL_UART_Init(&mUsart);
+    HAL_UART_RegisterRxEventCallback(&mUsart, Logger::uartReceiveCallback);
     HAL_UARTEx_ReceiveToIdle_IT(&mUsart, buffer.data(), buffer.size());
 }
 
