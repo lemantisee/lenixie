@@ -49,10 +49,6 @@ const RTClock::Time &RTClock::getTime()
         return mTime;
     }
 
-    SString<100> str;
-    str.append("Date is ").appendNumber(data.Month).append("-").appendNumber(data.Date).append("-").appendNumber(data.WeekDay);
-    Logger::log(str.c_str());
-
     if (data.WeekDay == 0) {
         data.WeekDay = 7;
     }
