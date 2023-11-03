@@ -4,6 +4,7 @@
 
 #include "stm32f1xx.h"
 #include "StringBuffer.h"
+#include "SString.h"
 
 class EspAtCommand;
 
@@ -64,13 +65,15 @@ private:
 	bool enableMultipleConnections(bool state);
 	
 	static void uartReceiveCallback(UART_HandleTypeDef *uart, uint16_t size);
+	static void uartInitCallback(UART_HandleTypeDef *huart);
+	static void uartDeinitCallback(UART_HandleTypeDef *huart);
 	
 	UART_HandleTypeDef mUart;
 	StringBuffer<255> mBuffer;
 	StringBuffer<64> mInputBuffer;
 	Mode mMode = Unknown;
 	uint32_t mLastConnectionCheck = 0;
-	const char *mStationSSIDWasConnected = nullptr;
-	const char *mStationPswWasConnected = nullptr;
+	SString<65> mStationSSIDWasConnected;
+	SString<65> mStationPswWasConnected;
 };
 

@@ -66,6 +66,12 @@ namespace
 
 extern "C"
 {
+    void HAL_MspInit()
+    {
+      __HAL_RCC_AFIO_CLK_ENABLE();
+      __HAL_RCC_PWR_CLK_ENABLE();
+    }
+
     void SysTick_Handler()
     {
         // called every 50us

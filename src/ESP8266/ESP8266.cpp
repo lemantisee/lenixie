@@ -106,7 +106,19 @@ bool ESP8266::setupUart(USART_TypeDef *usart, uint32_t baudrate)
         return false;
     }
 
-    return HAL_UART_RegisterRxEventCallback(&mUart, ESP8266::uartReceiveCallback) == HAL_OK;
+    if (HAL_UART_RegisterRxEventCallback(&mUart, ESP8266::uartReceiveCallback) != HAL_OK ) {
+        return false;
+    }
+
+    if (HAL_UART_RegisterCallback(&mUart, HAL_UART_MSPINIT_CB_ID, ESP8266::uartInitCallback) != HAL_OK ) {
+        return false;
+    }
+
+    if (HAL_UART_RegisterCallback(&mUart, HAL_UART_MSPDEINIT_CB_ID, ESP8266::uartDeinitCallback) != HAL_OK ) {
+        return false;
+    }
+
+    return true;
 }
 
 bool ESP8266::startReadUart()
@@ -154,8 +166,6 @@ bool ESP8266::waitForAnswer(const char *answer1, uint16_t timeout, const char *a
         if (checkAnswer) {
             return true;
         }
-
-        asm("nop");
     }
 
     Logger::log("waitForAnswer failed with buffer");
@@ -375,6 +385,7 @@ bool ESP8266::setAPip(const char *ip) {
 bool ESP8266::reset() {
     sendCommand("AT+RST", true);
     HAL_Delay(10000);
+    return true;
 }
 
 void ESP8266::uartReceiveCallback(UART_HandleTypeDef *uart, uint16_t size)
@@ -385,6 +396,40 @@ void ESP8266::uartReceiveCallback(UART_HandleTypeDef *uart, uint16_t size)
 
     wifiInstance->mBuffer.append(wifiInstance->mInputBuffer.data(), size);
     wifiInstance->startReadUart();
+}
+
+void ESP8266::uartInitCallback(UART_HandleTypeDef *huart)
+{
+    if (!wifiInstance) {
+        return;
+    }
+
+    if (huart->Instance != wifiInstance->mUart.Instance){
+        return;
+    }
+    __HAL_RCC_USART1_CLK_ENABLE();
+    __HAL_RCC_GPIOA_CLK_ENABLE();
+
+    GPIO_InitTypeDef GPIO_InitStruct = {0};
+    GPIO_InitStruct.Pin = GPIO_PIN_9;
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+    GPIO_InitStruct.Pin = GPIO_PIN_10;
+    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+    HAL_NVIC_SetPriority(USART1_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(USART1_IRQn);
+}
+
+void ESP8266::uartDeinitCallback(UART_HandleTypeDef *huart)
+{
+    __HAL_RCC_USART1_CLK_DISABLE();
+    HAL_GPIO_DeInit(GPIOA, GPIO_PIN_9 | GPIO_PIN_10);
+    HAL_NVIC_DisableIRQ(USART1_IRQn);
 }
 
 bool ESP8266::isConnected() {
@@ -405,8 +450,6 @@ bool ESP8266::isConnected() {
         if (posOpt && mBuffer.capacity() > statusStrSize) {
             break;
         }
-
-        asm("nop");
     }
 
     if (!posOpt) {

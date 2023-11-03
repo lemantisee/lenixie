@@ -10,6 +10,20 @@ class SString
 public:
     SString() = default;
 
+    SString &operator=(const char *str) {
+        mBuffer.fill(0);
+        if (std::strlen(str) > mBuffer.size() - 1) {
+            return *this;
+        }
+
+        std::strcpy(mBuffer.data(), str);
+        return *this;
+    }
+
+    operator const char *() const {
+        return mBuffer.data();
+    }
+
     SString &append(const char *str) {
         std::strcat(mBuffer.data(), str);
         return *this;

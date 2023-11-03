@@ -7,6 +7,25 @@ namespace
 {
     constexpr uint32_t ntpPeriodSync = 43200000;
     const char *ntpServer = "0.pool.ntp.org";
+    void rtcInit(RTC_HandleTypeDef *hrtc)
+    {
+        if (hrtc->Instance == RTC) {
+            HAL_PWR_EnableBkUpAccess();
+            __HAL_RCC_BKP_CLK_ENABLE();
+            __HAL_RCC_RTC_ENABLE();
+
+            HAL_NVIC_SetPriority(RTC_IRQn, 0, 0);
+            HAL_NVIC_EnableIRQ(RTC_IRQn);
+        }
+    }
+
+    void rtcDeinit(RTC_HandleTypeDef *hrtc)
+    {
+        if (hrtc->Instance == RTC) {
+            __HAL_RCC_RTC_DISABLE();
+        }
+    }
+
 } // namespace
 
 
@@ -17,6 +36,9 @@ void RTClock::init(ESP8266 *wifi)
     mHandle.Init.OutPut = RTC_OUTPUTSOURCE_NONE;
     HAL_RTC_Init(&mHandle);
     __HAL_RTC_ALARM_ENABLE_IT(&mHandle, RTC_IT_SEC);
+
+    HAL_RTC_RegisterCallback(&mHandle, HAL_RTC_MSPINIT_CB_ID, &rtcInit);
+    HAL_RTC_RegisterCallback(&mHandle, HAL_RTC_MSPDEINIT_CB_ID, &rtcDeinit);
 
     mNtp.init(wifi);
     mInited = true;
