@@ -68,6 +68,14 @@ namespace
 
 extern "C"
 {
+    void HAL_MspInit(void)
+    {
+        __HAL_RCC_AFIO_CLK_ENABLE();
+        __HAL_RCC_PWR_CLK_ENABLE();
+        __HAL_RCC_GPIOA_CLK_ENABLE();
+        __HAL_RCC_GPIOB_CLK_ENABLE();
+    }
+
     void SysTick_Handler()
     {
         // called every 50us
@@ -106,9 +114,6 @@ int main(void)
 {
     HAL_Init();
     systemClockInit();
-
-    __HAL_RCC_GPIOA_CLK_ENABLE();
-    __HAL_RCC_GPIOB_CLK_ENABLE();
 
     Logger::init(USART3, 115200);
 
