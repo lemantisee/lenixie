@@ -1,5 +1,7 @@
 #include "RTClock.h"
 
+#include <cstdlib>
+
 #include "SString.h"
 #include "Logger.h"
 

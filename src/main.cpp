@@ -13,6 +13,8 @@
 
 namespace
 {
+    const uint32_t F_CPU = 72000000;
+
     volatile bool testBlinkStart = false;
     volatile uint8_t testTimer = 0;
     uint16_t sysTicks = 0;
@@ -66,12 +68,6 @@ namespace
 
 extern "C"
 {
-    void HAL_MspInit()
-    {
-      __HAL_RCC_AFIO_CLK_ENABLE();
-      __HAL_RCC_PWR_CLK_ENABLE();
-    }
-
     void SysTick_Handler()
     {
         // called every 50us

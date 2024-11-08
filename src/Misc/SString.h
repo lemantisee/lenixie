@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <cstring>
+#include <cstdio>
 #include <array>
 
 template <uint32_t N>

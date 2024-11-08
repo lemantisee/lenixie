@@ -1,10 +1,11 @@
 #ifndef SMPROTOCOL_H
 #define SMPROTOCOL_H
 
-#include <stdlib.h>
+#include <cstdlib>
 #include <cstring>
-#include <string.h>
-#include <stdio.h>
+#include <cstring>
+#include <cstdio>
+#include <cstdint>
 #include <array>
 
 class Interface;
