@@ -70,7 +70,7 @@ const RTClock::Time &RTClock::getTime()
 
     RTC_DateTypeDef data = {0};
     if (HAL_RTC_GetDate(&mHandle, &data, RTC_FORMAT_BIN) != HAL_OK) {
-        Logger::log("Unable to get date from rtc");
+        LOG("Unable to get date from rtc");
         return mTime;
     }
 
@@ -80,7 +80,7 @@ const RTClock::Time &RTClock::getTime()
 
     RTC_TimeTypeDef time = {0};
     if (HAL_RTC_GetTime(&mHandle, &time, RTC_FORMAT_BIN) != HAL_OK) {
-        Logger::log("Unable to get time from rtc");
+        LOG("Unable to get time from rtc");
         return mTime;
     }
 

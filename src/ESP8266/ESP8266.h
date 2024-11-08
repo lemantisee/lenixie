@@ -3,7 +3,7 @@
 #include "SMProtocol/Interface.h"
 
 #include "stm32f1xx.h"
-#include "StringBuffer.h"
+
 #include "SString.h"
 
 class EspAtCommand;
@@ -69,8 +69,8 @@ private:
 	static void uartDeinitCallback(UART_HandleTypeDef *huart);
 	
 	UART_HandleTypeDef mUart;
-	StringBuffer<255> mBuffer;
-	StringBuffer<64> mInputBuffer;
+	SString<255> mBuffer;
+	SString<64> mInputBuffer;
 	Mode mMode = Unknown;
 	uint32_t mLastConnectionCheck = 0;
 	SString<65> mStationSSIDWasConnected;

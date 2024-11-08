@@ -1,5 +1,7 @@
 target_sources(${PROJECT_NAME} PRIVATE
     main.cpp
+    MonitorCommand.h
+    LogDump.h LogDump.cpp
 
     Clock/NTPRequest.h Clock/NTPRequest.cpp
     Clock/RTClock.h Clock/RTClock.cpp
@@ -10,12 +12,13 @@ target_sources(${PROJECT_NAME} PRIVATE
     Indicator/BCDDecoder.h Indicator/BCDDecoder.cpp
     Indicator/DynamicIndication.h Indicator/DynamicIndication.cpp
 
-    Misc/Logger.h Misc/Logger.cpp
-    Misc/SString.h 
-    Misc/StringBuffer.h
-
     SMProtocol/Interface.h
     SMProtocol/SMProtocol.h SMProtocol/SMProtocol.cpp
+
+    Usb/CustomHid.h Usb/CustomHid.cpp
+    Usb/UsbDriverF103.h Usb/UsbDriverF103.cpp
+    Usb/UsbDeviceDescriptor.h Usb/UsbDeviceDescriptor.cpp
+    Usb/UsbDevice.h Usb/UsbDevice.cpp
 )
 
 target_include_directories( ${PROJECT_NAME} PRIVATE
@@ -25,4 +28,5 @@ target_include_directories( ${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/Indicator
     ${CMAKE_CURRENT_SOURCE_DIR}/Misc
     ${CMAKE_CURRENT_SOURCE_DIR}/SMProtocol
+    ${CMAKE_CURRENT_SOURCE_DIR}/Usb
 )

@@ -64,12 +64,12 @@ void ESP8266::process()
         return;
     }
 
-    if (!connectNetwork(mStationSSIDWasConnected, mStationPswWasConnected)) {
-        Logger::log("Unable to connect to previuos wifi");
+    if (!connectNetwork(mStationSSIDWasConnected.c_str(), mStationPswWasConnected.c_str())) {
+        LOG("Unable to connect to previuos wifi");
         return;
     }
 
-    Logger::log("Reconnected to previuos wifi");
+    LOG("Reconnected to previuos wifi");
 }
 
 void ESP8266::sendCommand(const char *cmd, bool sendEnd) {
@@ -168,8 +168,8 @@ bool ESP8266::waitForAnswer(const char *answer1, uint16_t timeout, const char *a
         }
     }
 
-    Logger::log("waitForAnswer failed with buffer");
-    Logger::log(mBuffer.c_str());
+    LOG("waitForAnswer failed with buffer");
+    LOG(mBuffer.c_str());
     mBuffer.clear();
     return false;
 }
@@ -181,7 +181,7 @@ bool ESP8266::connectNetwork(const char* ssid, const char* password) {
 
     EspAtCommand cmd("AT+CWJAP_CUR=");
     cmd.add(ssid).add(password);
-    Logger::log(cmd.string());
+    LOG(cmd.string());
 
     sendCommand(cmd);
     const bool ok = waitForAnswer("OK", 20000);
@@ -275,7 +275,7 @@ bool ESP8266::getData(uint8_t *buffer, uint8_t size)
     if (mBuffer.capacity() < 48 + espHeaderSize) {
         SString<20> str;
         str.append("buffer capacity ").appendNumber(mBuffer.capacity());
-        Logger::log(str.c_str());
+        LOG(str.c_str());
         return false;
     }
     char *ptr = strstr((char *)mBuffer.data(), answer.c_str());
@@ -285,7 +285,7 @@ bool ESP8266::getData(uint8_t *buffer, uint8_t size)
 
 bool ESP8266::switchToAP()
 {
-    Logger::log("Starting AP");
+    LOG("Starting AP");
     if (!setMode(ESP8266::SoftAP)) {
         return false;
     }
@@ -465,7 +465,7 @@ bool ESP8266::isConnected() {
     char statusChar = mBuffer[pos];
 
     HAL_Delay(500);
-    Logger::log(mBuffer.c_str());
+    LOG(mBuffer.c_str());
 
     return statusChar == '2' || statusChar == '3';
 }

@@ -17,7 +17,11 @@ target_include_directories( ${PROJECT_NAME} PRIVATE
 
 target_link_libraries( ${PROJECT_NAME} PRIVATE
     CMSIS
+    CustomHID
     HAL
+    Logger
+    Json
+    SString
 )
 
 target_compile_definitions( ${PROJECT_NAME} PRIVATE

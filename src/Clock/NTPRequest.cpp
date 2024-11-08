@@ -50,12 +50,12 @@ std::optional<int64_t> NTPRequest::getNtpTimestamp()
     std::array<uint8_t, 48> ntpRequset = {0x1B, 0, 0, 0, 0, 0, 0, 0, 0};
     ntp_packet ntpAnswer;
 
-    Logger::log("Sending ntp request");
+    LOG("Sending ntp request");
     mWifi->sendUDPpacket((char *)ntpRequset.data(), ntpRequset.size());
 
     std::array<uint8_t, 48> ntpBuffer;
     if (!mWifi->getData(ntpBuffer.data(), ntpBuffer.size())) {
-        Logger::log("Ntp packet receive failed");
+        LOG("Ntp packet receive failed");
         return std::nullopt;
     }
 
@@ -69,7 +69,7 @@ bool NTPRequest::updateTime(int64_t timestamp)
     std::tm *timeVal = std::gmtime(&timestamp);
     if (!timeVal)
     {
-        Logger::log("Convert timestamp failed");
+        LOG("Convert timestamp failed");
         return false;
     }
 
@@ -88,7 +88,7 @@ bool NTPRequest::updateTime(int64_t timestamp)
     SString<100> str;
     str.append("NTP time: ").appendNumber(mDateTime.monthDay).append("-").appendNumber(mDateTime.month).append("/").appendNumber(mDateTime.weekDay).append(" ");
     str.appendNumber(mDateTime.hours).append(":").appendNumber(mDateTime.minutes).append(":").appendNumber(mDateTime.seconds);
-    Logger::log(str.c_str());
+    LOG(str.c_str());
     return true;
 }
 
