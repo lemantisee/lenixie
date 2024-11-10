@@ -1,14 +1,12 @@
 #pragma once
 
-#include "SMProtocol/Interface.h"
-
 #include "stm32f1xx.h"
 
 #include "SString.h"
 
 class EspAtCommand;
 
-class ESP8266 : public Interface
+class ESP8266
 {
 public:
 	enum  Mode
@@ -31,10 +29,10 @@ public:
 	bool connectToServerUDP(const char* host, uint16_t port);
 	bool sendUDPpacket(const char* msg, uint16_t size);
 
-    bool SendString(const char *str) override;
+    bool SendString(const char *str);
     bool SendString(const char *str, const char *ip, uint16_t port);
-    bool hasIncomeData() override;
-    uint8_t *getIncomeData() override;
+    bool hasIncomeData();
+    uint8_t *getIncomeData();
 	bool getData(uint8_t *buffer, uint8_t size);
 
 	void uartInterrupt();

@@ -3,21 +3,13 @@
 #include <cstdint>
 #include <optional>
 
+#include "DateTime.h"
+
 class ESP8266;
 
 class NTPRequest
 {
 public:
-    struct DateTime {
-        uint32_t year = 0;
-        uint8_t month = 0;
-        uint8_t monthDay = 0;
-        uint8_t weekDay = 0;
-        uint8_t hours = 0;
-        uint8_t minutes = 0;
-        uint8_t seconds = 0;
-    };
-
     NTPRequest () = default;
 
     void init(ESP8266 *wifi);

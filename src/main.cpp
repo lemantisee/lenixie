@@ -116,7 +116,7 @@ void SysTick_Handler()
 void RTC_IRQHandler()
 {
     Clock.interrupt();
-    const RTClock::Time &time = Clock.getTime();
+    const DateTime &time = Clock.getTime();
     Indication.setNumber(time.hours / 10, time.hours % 10, time.minutes / 10, time.minutes % 10);
     Indication.dimm(time.hours < 7);
 }

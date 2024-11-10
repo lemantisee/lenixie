@@ -178,7 +178,8 @@ bool ESP8266::waitForAnswer(const char *answer1, uint16_t timeout, const char *a
     return false;
 }
 
-bool ESP8266::connectNetwork(const char* ssid, const char* password) {
+bool ESP8266::connectNetwork(const char *ssid, const char *password)
+{
     if (!setMode(ESP8266::Station)) {
         return false;
     }
@@ -469,7 +470,11 @@ bool ESP8266::isConnected() {
     char statusChar = mBuffer[pos];
 
     HAL_Delay(500);
-    LOG(mBuffer.c_str());
 
-    return statusChar == '2' || statusChar == '3';
+    bool connected = statusChar == '2' || statusChar == '3';
+    if (!connected) {
+        LOG(mBuffer.c_str());
+    }
+
+    return connected;
 }

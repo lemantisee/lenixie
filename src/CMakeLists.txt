@@ -3,6 +3,7 @@ target_sources(${PROJECT_NAME} PRIVATE
     MonitorCommand.h
     LogDump.h LogDump.cpp
 
+    Clock/DateTime.h Clock/DateTime.cpp
     Clock/NTPRequest.h Clock/NTPRequest.cpp
     Clock/RTClock.h Clock/RTClock.cpp
 
@@ -11,9 +12,6 @@ target_sources(${PROJECT_NAME} PRIVATE
 
     Indicator/BCDDecoder.h Indicator/BCDDecoder.cpp
     Indicator/DynamicIndication.h Indicator/DynamicIndication.cpp
-
-    SMProtocol/Interface.h
-    SMProtocol/SMProtocol.h SMProtocol/SMProtocol.cpp
 
     Usb/CustomHid.h Usb/CustomHid.cpp
     Usb/UsbDriverF103.h Usb/UsbDriverF103.cpp

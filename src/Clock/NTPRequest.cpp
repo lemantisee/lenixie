@@ -40,7 +40,7 @@ void NTPRequest::setTimezone(uint8_t timezone)
     mTimezone = timezone;
 }
 
-const NTPRequest::DateTime &NTPRequest::getTime() const
+const DateTime &NTPRequest::getTime() const
 {
     return mDateTime;
 }
@@ -67,8 +67,7 @@ std::optional<int64_t> NTPRequest::getNtpTimestamp()
 bool NTPRequest::updateTime(int64_t timestamp)
 {
     std::tm *timeVal = std::gmtime(&timestamp);
-    if (!timeVal)
-    {
+    if (!timeVal) {
         LOG("Convert timestamp failed");
         return false;
     }
@@ -85,10 +84,6 @@ bool NTPRequest::updateTime(int64_t timestamp)
         mDateTime.weekDay = 7;
     }
 
-    SString<100> str;
-    str.append("NTP time: ").appendNumber(mDateTime.monthDay).append("-").appendNumber(mDateTime.month).append("/").appendNumber(mDateTime.weekDay).append(" ");
-    str.appendNumber(mDateTime.hours).append(":").appendNumber(mDateTime.minutes).append(":").appendNumber(mDateTime.seconds);
-    LOG(str.c_str());
     return true;
 }
 
