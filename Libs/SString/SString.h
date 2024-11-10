@@ -10,6 +10,8 @@ template<uint32_t N>
 class SString
 {
 public:
+    using Buffer = std::array<char, N + 1>;
+
     SString() = default;
     SString(const char *data, uint32_t size)
     {
@@ -207,7 +209,10 @@ public:
         return std::nullopt;
     }
 
+    Buffer::const_iterator begin() const { return mBuffer.cbegin(); }
+    Buffer::const_iterator end() const { return mBuffer.cend(); }
+
 private:
     uint32_t mCurrentByte = 0;
-    std::array<char, N + 1> mBuffer = {};
+    Buffer mBuffer = {};
 };

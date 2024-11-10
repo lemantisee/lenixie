@@ -22,10 +22,12 @@ bool ESP8266::init(USART_TypeDef *usart, uint32_t baudrate)
     wifiInstance = this;
 
     if (!setupUart(usart, baudrate)) {
+        LOG("Unable to setup uart");
         return false;
     }
 
     if (!startReadUart()) {
+        LOG("Unable to start uart");
         return false;
     }
 
@@ -34,14 +36,17 @@ bool ESP8266::init(USART_TypeDef *usart, uint32_t baudrate)
     // reset();
 
     if (!enableEcho(false)) {
+        LOG("Unable to echo");
         return false;
     }
 
     if (!enableMultipleConnections(false)) {
+        LOG("enableMultipleConnections fails");
         return false;
     }
 
     if (!setMode(Station)) {
+        LOG("setMode fails");
         return false;
     }
 
@@ -124,7 +129,7 @@ bool ESP8266::setupUart(USART_TypeDef *usart, uint32_t baudrate)
 bool ESP8266::startReadUart()
 {
     mInputBuffer.clear();
-    return HAL_UARTEx_ReceiveToIdle_IT(&mUart, (uint8_t *)mInputBuffer.data(), mInputBuffer.size()) == HAL_OK;
+    return HAL_UARTEx_ReceiveToIdle_IT(&mUart, (uint8_t *)mInputBuffer.data(), mInputBuffer.capacity()) == HAL_OK;
 }
 
 bool ESP8266::setMode(Mode mode)
@@ -158,9 +163,9 @@ bool ESP8266::waitForAnswer(const char *answer1, uint16_t timeout, const char *a
 {
     timeout += HAL_GetTick();
     while ((HAL_GetTick() < timeout)) {
-        bool checkAnswer = strstr(mBuffer.c_str(), answer1) != nullptr;
+        bool checkAnswer = mBuffer.contains(answer1);
         if (answer2) {
-            checkAnswer = checkAnswer || strstr(mBuffer.c_str(), answer2) != nullptr;
+            checkAnswer = checkAnswer || mBuffer.contains(answer2);
         }
 
         if (checkAnswer) {
@@ -168,8 +173,7 @@ bool ESP8266::waitForAnswer(const char *answer1, uint16_t timeout, const char *a
         }
     }
 
-    LOG("waitForAnswer failed with buffer");
-    LOG(mBuffer.c_str());
+    LOG("waitForAnswer failed with buffer %s", mBuffer.c_str());
     mBuffer.clear();
     return false;
 }
@@ -407,29 +411,29 @@ void ESP8266::uartInitCallback(UART_HandleTypeDef *huart)
     if (huart->Instance != wifiInstance->mUart.Instance){
         return;
     }
-    __HAL_RCC_USART1_CLK_ENABLE();
-    __HAL_RCC_GPIOA_CLK_ENABLE();
+    __HAL_RCC_USART3_CLK_ENABLE();
+    __HAL_RCC_GPIOB_CLK_ENABLE();
 
     GPIO_InitTypeDef GPIO_InitStruct = {0};
-    GPIO_InitStruct.Pin = GPIO_PIN_9;
+    GPIO_InitStruct.Pin = GPIO_PIN_10;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-    GPIO_InitStruct.Pin = GPIO_PIN_10;
+    GPIO_InitStruct.Pin = GPIO_PIN_11;
     GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
-    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-    HAL_NVIC_SetPriority(USART1_IRQn, 0, 0);
-    HAL_NVIC_EnableIRQ(USART1_IRQn);
+    HAL_NVIC_SetPriority(USART3_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(USART3_IRQn);
 }
 
 void ESP8266::uartDeinitCallback(UART_HandleTypeDef *huart)
 {
-    __HAL_RCC_USART1_CLK_DISABLE();
-    HAL_GPIO_DeInit(GPIOA, GPIO_PIN_9 | GPIO_PIN_10);
-    HAL_NVIC_DisableIRQ(USART1_IRQn);
+    __HAL_RCC_USART3_CLK_DISABLE();
+    HAL_GPIO_DeInit(GPIOB, GPIO_PIN_10 | GPIO_PIN_11);
+    HAL_NVIC_DisableIRQ(USART3_IRQn);
 }
 
 bool ESP8266::isConnected() {
@@ -447,7 +451,7 @@ bool ESP8266::isConnected() {
     while ((HAL_GetTick() < timeout)) {
         posOpt = mBuffer.find(statusStr);
 
-        if (posOpt && mBuffer.capacity() > statusStrSize) {
+        if (posOpt && mBuffer.size() > statusStrSize) {
             break;
         }
     }
@@ -458,7 +462,7 @@ bool ESP8266::isConnected() {
 
     const uint32_t pos = *posOpt + std::strlen(statusStr);
 
-    if (pos >=  mBuffer.capacity()) {
+    if (pos >=  mBuffer.size()) {
         return false;
     }
 

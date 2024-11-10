@@ -4,7 +4,6 @@
 #include "DynamicIndication.h"
 #include "RTClock.h"
 #include "ESP8266.h"
-#include "SMProtocol.h"
 #include "Logger.h"
 #include "SString.h"
 #include "WifiCredentials.h"
@@ -23,7 +22,6 @@ uint16_t sysTicks = 0;
 DynamicIndication Indication;
 RTClock Clock;
 ESP8266 wifi;
-SMProtocol protocol;
 UsbDevice usbHost;
 LogDump logDumper;
 
@@ -36,6 +34,12 @@ enum Command {
     TestBlink = 105,
     EnableNTP = 106,
     SetTimeZone = 107
+};
+
+enum InitStage
+{
+    Initing,
+    Inited,
 };
 
 bool systemClockInit()
@@ -92,8 +96,6 @@ void HAL_MspInit(void)
     __HAL_RCC_PWR_CLK_ENABLE();
     __HAL_RCC_GPIOA_CLK_ENABLE();
     __HAL_RCC_GPIOB_CLK_ENABLE();
-    __HAL_RCC_GPIOC_CLK_ENABLE();
-    __HAL_RCC_GPIOD_CLK_ENABLE();
 }
 
 void SysTick_Handler()
@@ -108,19 +110,18 @@ void SysTick_Handler()
         HAL_IncTick();
     }
 
-    // Indication.process();
+    Indication.process();
 }
 
 void RTC_IRQHandler()
 {
-    // Clock.interrupt();
-    // const RTClock::Time &time = Clock.getTime();
-    // Indication.setNumber(time.hours / 10, time.hours % 10, time.minutes / 10, time.minutes % 10);
-    // Indication.dimm(time.hours < 7);
+    Clock.interrupt();
+    const RTClock::Time &time = Clock.getTime();
+    Indication.setNumber(time.hours / 10, time.hours % 10, time.minutes / 10, time.minutes % 10);
+    Indication.dimm(time.hours < 7);
 }
 
-void USART1_IRQHandler() { //wifi.uartInterrupt(); 
-}
+void USART3_IRQHandler() { wifi.uartInterrupt(); }
 
 void processUsbCmd(const SString<64> &buffer)
 {
@@ -138,6 +139,7 @@ void processUsbCmd(const SString<64> &buffer)
 
 int main(void)
 {
+    InitStage stage = Initing;
     HAL_Init();
     systemClockInit();
 
@@ -145,160 +147,38 @@ int main(void)
         return 1;
     }
 
-    // Indication.setDecoderPins(GPIOB, GPIO_PIN_6, GPIO_PIN_8, GPIO_PIN_9, GPIO_PIN_7);
-    // Indication.setSign(DynamicIndication::MSBHourTube, GPIOA, GPIO_PIN_6);
-    // Indication.setSign(DynamicIndication::LSBHourTube, GPIOA, GPIO_PIN_5);
-    // Indication.setSign(DynamicIndication::MSBMinutesTube, GPIOA, GPIO_PIN_4);
-    // Indication.setSign(DynamicIndication::LSBMinutesTube, GPIOA, GPIO_PIN_3);
-    // Indication.setNumber(1, 2, 3, 4);
+    Indication.setDecoderPins(GPIOB, GPIO_PIN_6, GPIO_PIN_8, GPIO_PIN_9, GPIO_PIN_7);
+    Indication.setSign(DynamicIndication::MSBHourTube, GPIOA, GPIO_PIN_6);
+    Indication.setSign(DynamicIndication::LSBHourTube, GPIOA, GPIO_PIN_5);
+    Indication.setSign(DynamicIndication::MSBMinutesTube, GPIOA, GPIO_PIN_4);
+    Indication.setSign(DynamicIndication::LSBMinutesTube, GPIOA, GPIO_PIN_3);
+    Indication.setNumber(1, 2, 3, 4);
 
     LOG("Started");
-    LOG("Yourself off its pleasant ecstatic now law.Ye their mirth seems of songs");
-    LOG("Prospect out bed contempt separate");
-    LOG("Her inquietude our shy yet sentiments collecting");
-    LOG("Cottage fat beloved himself arrived old. Grave widow hours among him no you led");
 
-    // if (!wifi.init(USART1, 115200)) {
-    //     LOG("Unable to init wifi");
-    // }
+    bool wifiInited = wifi.init(USART3, 115200);
 
-    // if (!wifi.isConnected()) {
-    //     SString<255> str;
-    //     str.append("Connecting to wifi network ").append("\"").append(WifiCredentials::userSsid()).append("\"");
-    //     LOG(str.c_str());
-    //     if(!wifi.connectNetwork(WifiCredentials::userSsid(), WifiCredentials::userPassword())){
-    //         LOG("Unable to connect to network");
-    //     }
-    // }
+    if (!wifiInited) {
+        LOG("Unable to init wifi");
+    }
 
-    // protocol.init(&wifi);
+    if (wifiInited && !wifi.isConnected()) {
+        LOG("Connecting to wifi network %s", WifiCredentials::userSsid());
+        if(!wifi.connectNetwork(WifiCredentials::userSsid(), WifiCredentials::userPassword())){
+            LOG("Unable to connect to network");
+        }
+    }
 
-    // Clock.setTimeZone(3);
-    // Clock.init(&wifi);
-
-    int count = 0;
-    int logNum = 0;
+    Clock.setTimeZone(3);
+    Clock.init(&wifi);
 
     for (;;) {
-        if (count == 10000) {
-            ++logNum;
-            count = 0;
-            LOG("Log line %i", logNum);
-        }
-
-        ++count;
-
         const SString<64> inBuffer = usbHost.popData();
         if (!inBuffer.empty()) {
             processUsbCmd(inBuffer);
         }
-        // Clock.process();
-        // wifi.process();
 
-        // Clock.process();
-        //		if (testBlinkStart) {
-        //			Indication.startIndication(updateClock);
-        //		}
-
-        //		if (!ntpPeriod) {
-        //			ntpPeriod = 43200000; //12 hours in ms
-        //			for (int i = 0; i < 2; i++) {
-        //				ntpRequest.getNtpRequest();
-        //				Delay();
-        //			}
-        //			if (ntpRequest.getTime()) {
-        //				Clock.setTime(ntpRequest.getHours(), ntpRequest.getMinutes(), ntpRequest.getSeconds());
-        //			}
-        //		}
-
-        // if (protocol.isCommandReady())
-        // {
-        //     // Logger::instance().log("Recieve UDP\n");
-
-        //     switch (Command(protocol.getCommand()))
-        //     {
-        //     case DeviceID:
-        //         // Logger::instance().log("Recieve command DeviceID\n");
-        //         // wifi.SendString("100:NxC_2", "192.168.4.255", 1111);
-        //         wifi.SendString("100:NxC_2");
-        //         wifi.SendString("100:NxC_2");
-        //         break;
-        //     case SetWifi:
-        //     {
-        //         // Logger::instance().log("Setting new wifi network\n");
-        //         wifi.SendString("101:Ok");
-        //         char *wStr = (char *)protocol.getStringParametr();
-        //         // Logger::instance().log("New wifi:");
-        //         // Logger::instance().log(wStr);
-        //         const char *ssid = strsep(&wStr, ",");
-        //         const char *pass = strsep(&wStr, ",");
-        //         wifi.closeCurrentConnection();
-        //         if (!wifi.connectNetwork(ssid, pass))
-        //         {
-        //             wifi.switchToAP();
-        //         }
-        //         else
-        //         {
-        //             wifi.getIP();
-        //             wifi.connectToServerUDP(wifi.broadcastIP, 1111);
-        //             wifi.SendString("100:NxC_2");
-        //             Clock.syncTime(ntpServer);
-        //         }
-        //         wifi.clearBuffer();
-        //     }
-        //     break;
-        //     case SetTime:
-        //     {
-        //         // Logger::instance().log("Setting new time\n");
-        //         wifi.SendString("103:Ok");
-        //         char *wStr = (char *)protocol.getStringParametr();
-        //         const char *str1 = strsep(&wStr, ",");
-        //         const char *str2 = strsep(&wStr, ",");
-        //         wifi.clearBuffer();
-        //         Clock.setTime(atoi(str1), atoi(str2), 0);
-        //         // testH = Clock.getTime()->RTC_Hours;
-        //         // testM = Clock.getTime()->RTC_Minutes;
-        //     }
-        //     break;
-        //     case SetNtpServer:
-        //     {
-        //         // Logger::instance().log("Setting new NTP server\n");
-        //         wifi.SendString("102:Ok");
-        //         const char *wStr = (char *)protocol.getStringParametr();
-        //         Clock.syncTime(wStr);
-        //         wifi.clearBuffer();
-        //     }
-        //     break;
-        //     case TestBlink:
-        //     {
-        //         // Logger::instance().log("Activate test blink\n");
-        //         wifi.SendString("105:Ok");
-        //         const uint8_t parametr = protocol.getParametr();
-        //         wifi.clearBuffer();
-        //         if (parametr)
-        //         {
-        //             testBlinkStart = true;
-        //         }
-        //         else
-        //         {
-        //             testBlinkStart = false;
-        //         }
-        //     }
-        //     break;
-        //     case SetTimeZone:
-        //     {
-        //         wifi.SendString("107:Ok");
-        //         // Logger::instance().log("Setting new time zone\n");{
-        //         const char *wStr = (char *)protocol.getStringParametr();
-        //         wifi.clearBuffer();
-        //         const uint8_t timeZone = atoi(wStr);
-        //         Clock.setTimeZone(timeZone);
-        //     }
-        //     break;
-        //     default:
-        //         wifi.clearBuffer();
-        //         break;
-        //     }
-        // }
+        Clock.process();
+        wifi.process();
     }
 }

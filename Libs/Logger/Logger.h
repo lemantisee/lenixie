@@ -16,7 +16,7 @@ class Logger
 {
 public:
     enum Type { Info, Error };
-    using String48 = SString<48>;
+    using String128 = SString<128>;
     using String256 = SString<256>;
 
     template<typename... Args>
@@ -32,23 +32,16 @@ public:
             return;
         }
 
-        str = header + str + "\n";
+        str = header + str;
 
         if (str.size() <= getInstance().mBufferStringSize) {
-            getInstance().mBuffer.append(String48(str.c_str(), str.size()));
-            return;
-        }
-
-        for (String48 &str : getInstance().splitString(str)) {
-            if (!str.empty()) {
-                getInstance().mBuffer.append(std::move(str));
-            }
+            getInstance().mBuffer.append(String128(str.c_str(), str.size()));
         }
     }
 
     static void enable(bool state) { getInstance().mEnabled = state; }
 
-    static String48 pop()
+    static String128 pop()
     {
         if (!getInstance().mEnabled) {
             return {};
@@ -62,6 +55,12 @@ public:
     }
 
     static bool empty() { return getInstance().mBuffer.empty(); }
+
+    template<typename... Args>
+    static String256 format(const char *fmt, Args... args)
+    {
+        return getInstance().stringFormat(fmt, args...);
+    }
 
 private:
     Logger() = default;
@@ -86,27 +85,6 @@ private:
         return mString;
     }
 
-    std::array<String48, 6> splitString(const String256 &str) const
-    {
-        size_t strSize = str.size();
-        std::array<String48, 6> strings;
-
-        const char *ptr = str.c_str();
-        for(String48 &token: strings) {
-            if (strSize == 0) {
-                break;
-            }
-
-            const size_t sizeToCopy = strSize < mBufferStringSize ? strSize : mBufferStringSize;
-
-            token = String48(ptr, sizeToCopy);
-            strSize -= sizeToCopy;
-            ptr += sizeToCopy;
-        }
-
-        return strings;
-    }
-
     String256 createHeader(const char *file, int line) const
     {
         String256 str;
@@ -114,9 +92,9 @@ private:
         return str;
     }
 
-    const uint8_t mBufferStringSize = 48;
+    const uint8_t mBufferStringSize = 128;
 
-    RingBuffer<128, 48> mBuffer;
+    RingBuffer<48, 128> mBuffer;
     String256 mString;
     bool mEnabled = true;
 };

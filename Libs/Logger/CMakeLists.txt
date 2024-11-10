@@ -1,12 +1,12 @@
 project(Logger)
 
-add_library(${PROJECT_NAME} STATIC
-    Logger.h Logger.cpp
+add_library(${PROJECT_NAME} INTERFACE
+    Logger.h
     RingBuffer.h
 )
 
-target_include_directories(${PROJECT_NAME} PUBLIC
+target_include_directories(${PROJECT_NAME} INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-target_link_libraries(${PROJECT_NAME} PUBLIC SString)
+target_link_libraries(${PROJECT_NAME} INTERFACE SString)

@@ -1,7 +1,5 @@
 #pragma once
 
-#include <stdint.h>
-
 #include "SString.h"
 #include "lwjson.h"
 

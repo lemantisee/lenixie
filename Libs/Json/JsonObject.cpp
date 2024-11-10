@@ -30,7 +30,7 @@ void JsonObject::add(const char *key, int value)
 
 void JsonObject::add(const char *key, const char *value)
 {
-        if(mBuffer.size() > 1) {
+        if(!mBuffer.empty()) {
             mBuffer += ',';
         }
 

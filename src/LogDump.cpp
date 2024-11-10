@@ -7,44 +7,94 @@
 void LogDump::dump(UsbDevice &usbDevice)
 {
     while (true) {
-        const bool end = Logger::empty();
-
-        SString<64> msg = createLogUnit(end);
-        usbDevice.sendData(msg);
-
-        if (end) {
+        if (Logger::empty()) {
+            JsonObject j;
+            j.add("id", LogEnd);
+            usbDevice.sendData(j.dump());
             break;
         }
 
-        const SString<64> report = usbDevice.popData();
-        if (report.empty()) {
+        SString<128> str = Logger::pop();
+        if (str.empty()) {
             break;
         }
 
-        JsonObject inMessage(report);
+        SString<256> escapedString = escapeString(str);
 
-        if (inMessage.getInt("id", UnknownCommand) != GetLog) {
-            break;
+        for (const SString<48> &token : splitString(escapedString)) {
+            if (token.empty()) {
+                continue;
+            }
+
+            const bool end = token.size() < token.capacity();
+
+            SString<64> msg = createLogUnit(token, end);
+            usbDevice.sendData(msg);
+
+            SString<64> report;
+            while (report.empty()) {
+                report = usbDevice.popData();
+            }
+
+            if (JsonObject(report).getInt("id", UnknownCommand) != GetLog) {
+                return;
+            }
         }
     }
 }
 
-SString<64> LogDump::createLogUnit(bool end) const
+SString<64> LogDump::createLogUnit(const SString<48> &str, bool end) const
 {
     JsonObject j;
-    if (end) {
-        j.add("id", LogEnd);
-        return j.dump();
-    }
 
-    SString<48> str = Logger::pop();
-    if (str.back() == '\n') {
-        str.pop();
-        j.add("id", LogUnitEnd);
-    } else {
-        j.add("id", LogUnit);
-    }
-
+    j.add("id", end ? LogUnitEnd : LogUnit);
     j.add("d", str.c_str());
     return j.dump();
+}
+
+std::array<SString<48>, 6> LogDump::splitString(const SString<256> &str) const
+{
+    const size_t tokenCapacity = 48;
+    size_t strSize = str.size();
+    std::array<SString<48>, 6> strings;
+
+    const char *ptr = str.c_str();
+    for (SString<48> &token : strings) {
+        if (strSize == 0) {
+            break;
+        }
+
+        const size_t sizeToCopy = std::min(strSize, tokenCapacity);
+
+        token = SString<48>(ptr, sizeToCopy);
+        strSize -= sizeToCopy;
+        ptr += sizeToCopy;
+    }
+
+    return strings;
+}
+
+SString<256> LogDump::escapeString(const SString<128> &str) const
+{
+    SString<256> escString;
+
+    for (char c: str) {
+        if (c == 0) {
+            break;
+        }
+
+        if (c == '"') {
+            escString += '\\';
+        }
+
+        if (c > 31 && c < 127) {
+            escString += c;
+            continue;
+        }
+
+        const SString<256> hex = Logger::format("<0x%02X>", c);
+        escString.append(hex.c_str());
+    }
+
+    return escString;
 }
