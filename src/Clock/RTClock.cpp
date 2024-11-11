@@ -8,7 +8,7 @@
 namespace
 {
     constexpr uint32_t ntpPeriodSync = 43200000; // 12 hours
-    const char *ntpServer = "0.pool.ntp.org";
+    const char *ntpServer = "pool.ntp.org";
     void rtcInit(RTC_HandleTypeDef *hrtc)
     {
         if (hrtc->Instance == RTC) {
@@ -95,7 +95,7 @@ const DateTime &RTClock::getTime()
 
     if (logRtcTimeAfterSync) {
         logRtcTimeAfterSync = false;
-        LOG("Time: %02i:%02i:%02i", mTime.hours, mTime.seconds, mTime.minutes);
+        LOG("Time: %02i:%02i:%02i", mTime.hours, mTime.minutes, mTime.seconds);
         LOG("Date: %i-%02i-%02i(%i)", mTime.year, mTime.month, mTime.monthDay, date.WeekDay);
     }
 
@@ -116,14 +116,23 @@ void RTClock::process()
 
 void RTClock::syncTime(const char *ntpServer)
 {
-    if (mNtp.request(ntpServer)) {
-        const DateTime time = mNtp.getTime();
+    logRtcTimeAfterSync = true;
+
+    if (auto timestampOpt = mNtp.getTimestamp(ntpServer)) {
+
+        const DateTime time = DateTime::fromTimestamp(*timestampOpt + mTimezone * 60 *60);
         LOG("Ntp Date: %i-%02i-%02i(%i)", time.year, time.month, time.monthDay, time.weekDay);
         LOG("Ntp Time: %02i:%02i:%02i", time.hours, time.minutes, time.seconds);
 
-        const DateTime localTime = toLocalTime(time);
+        const DateTime localTime = DateTime::localDatetime(*timestampOpt, mTimezone);
+        if (localTime.isNull()) {
+            LOG("datetim convertion fails");
+            return;
+        }
 
-        LOG("Loc Date: %i-%02i-%02i(%i)", localTime.year, localTime.month, localTime.monthDay, localTime.weekDay);
+        LOG("Loc Date: %i-%02i-%02i(%i)", localTime.year, localTime.month, localTime.monthDay,
+            localTime.weekDay);
+
         LOG("Loc Time: %02i:%02i:%02i", localTime.hours, localTime.minutes, localTime.seconds);
 
         if (!setRtcTime(localTime.hours, localTime.minutes, localTime.seconds)) {
@@ -134,8 +143,6 @@ void RTClock::syncTime(const char *ntpServer)
             LOG("date set fails");
         }
     }
-
-    logRtcTimeAfterSync = true;
 }
 
 void RTClock::interrupt()
@@ -164,62 +171,7 @@ bool RTClock::setRtcDate(uint32_t year, uint8_t month, uint8_t mday, uint8_t wda
     return HAL_RTC_SetDate(&mHandle, &data, RTC_FORMAT_BIN) == HAL_OK;
 }
 
-int8_t RTClock::calculateDST(uint8_t month, uint8_t monthday, uint8_t weekday, uint8_t hours) const
-{
-    // For Ukraine
-    // set back 1 hour on the last week of October on 3am
-    // set forward 1 hour on the last week of March on 4am
-
-    if (month > 9 || month < 2) {
-        return -1;
-    }
-
-    if (month > 2 && month < 8) {
-        return 0;
-    }
-
-    const uint8_t lastSunday = getLastSunday(monthday, weekday);
-    const bool edge = monthday > lastSunday || (monthday == lastSunday && hours >= 3);
-
-    if (month == 9) {
-        return edge ? -1 : 0;
-    }
-
-    if (month == 2) {
-        return edge ? 0 : -1;
-    }
-
-    return 0;
-}
-
-uint8_t RTClock::getLastSunday(uint8_t monthday, uint8_t weekday) const
-{
-    // March and October has 31 days
-    // we interested in period from 25 day
-    // only this days can be in the end of last week in month which has 31 day
-
-    if (monthday < 25) {
-        return monthday;
-    }
-
-    uint8_t forwardDay = monthday + 7 - weekday;
-    if (forwardDay <= 31) {
-        return forwardDay;
-    }
-
-    return monthday - weekday;
-}
-
-DateTime RTClock::toLocalTime(DateTime utcTime) const
-{
-    DateTime localTime = utcTime;
-    const int dstH = calculateDST(utcTime.month, utcTime.monthDay, utcTime.weekDay, utcTime.hours);
-    localTime.addDstHour(dstH);
-
-    return localTime;
-}
-
 void RTClock::setTimeZone(uint8_t timezone)
 {
-    mNtp.setTimezone(timezone);
+    mTimezone = timezone;
 }

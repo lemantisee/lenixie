@@ -35,16 +35,6 @@ void NTPRequest::init(ESP8266 *wifi)
     mWifi = wifi;
 }
 
-void NTPRequest::setTimezone(uint8_t timezone)
-{
-    mTimezone = timezone;
-}
-
-const DateTime &NTPRequest::getTime() const
-{
-    return mDateTime;
-}
-
 std::optional<int64_t> NTPRequest::getNtpTimestamp()
 {
     std::array<uint8_t, 48> ntpRequset = {0x1B, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -60,55 +50,28 @@ std::optional<int64_t> NTPRequest::getNtpTimestamp()
     }
 
     std::memcpy(&ntpAnswer, ntpBuffer.data(), sizeof(ntpAnswer));
-    int64_t timestampSeconds = (htonl(ntpAnswer.txTm_s) - NTP_TIMESTAMP_DELTA) + mTimezone * 60 * 60;
+    int64_t timestampSeconds = (htonl(ntpAnswer.txTm_s) - NTP_TIMESTAMP_DELTA);
     return timestampSeconds;
 }
 
-bool NTPRequest::updateTime(int64_t timestamp)
+std::optional<int64_t> NTPRequest::getTimestamp(const char *server)
 {
-    std::tm *timeVal = std::gmtime(&timestamp);
-    if (!timeVal) {
-        LOG("Convert timestamp failed");
-        return false;
+    if (!mWifi->isConnected()) {
+        return std::nullopt;
     }
 
-    mDateTime.monthDay = timeVal->tm_mday;
-    mDateTime.weekDay = timeVal->tm_wday;
-    mDateTime.month = timeVal->tm_mon;
-    mDateTime.year = timeVal->tm_year + 1900;
-    mDateTime.hours = timeVal->tm_hour;
-    mDateTime.minutes = timeVal->tm_min;
-    mDateTime.seconds = timeVal->tm_sec;
-
-    if(mDateTime.weekDay == 0) {
-        mDateTime.weekDay = 7;
-    }
-
-    return true;
-}
-
-bool NTPRequest::request(const char *server)
-{
-    if (!mWifi->isConnected())
-    {
-        return false;
-    }
-
-    if (!mWifi->connectToServerUDP(server, 123))
-    {
-        return false;
+    if (!mWifi->connectToServerUDP(server, 123)) {
+        return std::nullopt;
     }
 
     for (uint8_t i = 0; i < 2; ++i) {
         if (auto timestamp = getNtpTimestamp()) {
-            if (updateTime(*timestamp)) {
-                return true;
-            }
+            return timestamp;
         }
         HAL_Delay(2000);
     }
 
-    return false;
+    return std::nullopt;
 }
 
 uint32_t NTPRequest::htonl(uint32_t val) const

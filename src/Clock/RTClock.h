@@ -22,15 +22,12 @@ public:
 private:
     bool setRtcTime(uint8_t hours, uint8_t minutes, uint8_t seconds);
     bool setRtcDate(uint32_t year, uint8_t month, uint8_t mday, uint8_t wday);
-
-    int8_t calculateDST(uint8_t month, uint8_t monthday, uint8_t weekday, uint8_t hours) const;
-    uint8_t getLastSunday(uint8_t monthday, uint8_t weekday) const;
-    DateTime toLocalTime(DateTime utcTime) const;
     
     RTC_HandleTypeDef mHandle;
     DateTime mTime;
     NTPRequest mNtp;
     uint32_t mLastNtpSyncTime = 0;
+    uint8_t mTimezone = 0;
     bool mInited = false;
 };
 
