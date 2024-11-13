@@ -1,47 +1,38 @@
 #include "LogDump.h"
 
-#include "UsbDevice.h"
+#include "Logger.h"
 #include "JsonObject.h"
 #include "MonitorCommand.h"
 
-void LogDump::dump(UsbDevice &usbDevice)
+SString<64> LogDump::popReport()
 {
-    while (true) {
-        if (Logger::empty()) {
-            JsonObject j;
-            j.add("id", LogEnd);
-            usbDevice.sendData(j.dump());
-            break;
-        }
-
+    if (mCurrentLogIndex == -1) {
         SString<128> str = Logger::pop();
         if (str.empty()) {
-            break;
+            {};
         }
 
         SString<256> escapedString = escapeString(str);
-
-        for (const SString<48> &token : splitString(escapedString)) {
-            if (token.empty()) {
-                continue;
-            }
-
-            const bool end = token.size() < token.capacity();
-
-            SString<64> msg = createLogUnit(token, end);
-            usbDevice.sendData(msg);
-
-            SString<64> report;
-            while (report.empty()) {
-                report = usbDevice.popData();
-            }
-
-            if (JsonObject(report).getInt("id", UnknownCommand) != GetLog) {
-                return;
-            }
-        }
+        mLogs = splitString(escapedString);
+        mCurrentLogIndex = 0;
     }
+
+    if (mCurrentLogIndex >= mLogs.size() - 1) {
+        return {};
+    }
+
+    const SString<48> &token = mLogs[mCurrentLogIndex];
+    ++mCurrentLogIndex;
+
+    if (token.empty()) {
+        return {};
+    }
+
+    const bool end = token.size() < token.capacity();
+    return createLogUnit(token, end);
 }
+
+bool LogDump::empty() { return Logger::empty() && mCurrentLogIndex == -1; }
 
 SString<64> LogDump::createLogUnit(const SString<48> &str, bool end) const
 {

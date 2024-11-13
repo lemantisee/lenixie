@@ -1,5 +1,4 @@
 #include "stm32f1xx.h"
-#include "stm32f1xx_hal_uart.h"
 
 #include "DynamicIndication.h"
 #include "RTClock.h"
@@ -34,12 +33,6 @@ enum Command {
     TestBlink = 105,
     EnableNTP = 106,
     SetTimeZone = 107
-};
-
-enum InitStage
-{
-    Initing,
-    Inited,
 };
 
 bool systemClockInit()
@@ -123,6 +116,31 @@ void RTC_IRQHandler()
 
 void USART3_IRQHandler() { wifi.uartInterrupt(); }
 
+void dumpLogs() {
+    LogDump dumper;
+
+    while (!dumper.empty()) {
+        SString<64> msg = dumper.popReport();
+        if (msg.empty()) {
+            break;
+        }
+        usbHost.sendData(msg);
+
+        SString<64> report;
+        while (report.empty()) {
+            report = usbHost.popData();
+        }
+
+        if (JsonObject(report).getInt("id", UnknownCommand) != GetLog) {
+            break;
+        }
+    }
+
+    JsonObject j;
+    j.add("id", LogEnd);
+    usbHost.sendData(j.dump());
+}
+
 void processUsbCmd(const SString<64> &buffer)
 {
     JsonObject inMessage(buffer);
@@ -130,7 +148,7 @@ void processUsbCmd(const SString<64> &buffer)
     MonitorCommandId id = MonitorCommandId(inMessage.getInt("id", UnknownCommand));
 
     switch (id) {
-    case GetLog: logDumper.dump(usbHost); break;
+    case GetLog: dumpLogs(); break;
     default: break;
     }
 }
@@ -139,7 +157,6 @@ void processUsbCmd(const SString<64> &buffer)
 
 int main(void)
 {
-    InitStage stage = Initing;
     HAL_Init();
     systemClockInit();
 
