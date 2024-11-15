@@ -133,7 +133,7 @@ public:
         return append(char(high8bits)) && append(char(low8bits));
     }
 
-    bool append(char *data, uint32_t size)
+    bool append(const char *data, uint32_t size)
     {
         if (mCurrentByte + size >= capacity() - 1) {
             return false;
@@ -146,9 +146,9 @@ public:
         return true;
     }
 
-    bool append(uint8_t *data, uint32_t size)
+    bool append(const uint8_t *data, uint32_t size)
     {
-        return append(reinterpret_cast<char *>(data), size);
+        return append(reinterpret_cast<const char *>(data), size);
     }
 
     SString &appendNumber(int value)
@@ -178,7 +178,11 @@ public:
 
     char back() const { return mBuffer[mCurrentByte - 1]; }
 
-    void resize(uint32_t size) { mCurrentByte = size; }
+    void resize(uint32_t size)
+    {
+        mCurrentByte = size;
+        // std::fill(mBuffer.begin() + mCurrentByte, mBuffer.end(), 0);
+    }
 
     const char *c_str() const { return mBuffer.data(); }
 

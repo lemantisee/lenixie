@@ -22,10 +22,6 @@ public:
     template<typename... Args>
     static void log(Type type, const char *file, int line, const char *fmt, Args... args)
     {
-        if (!getInstance().mEnabled) {
-            return;
-        }
-
         String256 header = getInstance().createHeader(file, line);
         String256 &str = getInstance().stringFormat(fmt, args...);
         if (str.size() + header.size() + 1 >= str.capacity()) {
@@ -39,14 +35,8 @@ public:
         }
     }
 
-    static void enable(bool state) { getInstance().mEnabled = state; }
-
     static String128 pop()
     {
-        if (!getInstance().mEnabled) {
-            return {};
-        }
-
         if (getInstance().mBuffer.empty()) {
             return {};
         }
@@ -96,5 +86,4 @@ private:
 
     RingBuffer<48, 128> mBuffer;
     String256 mString;
-    bool mEnabled = true;
 };

@@ -5,6 +5,7 @@
 #include "SString.h"
 
 class EspAtCommand;
+class Uart;
 
 class ESP8266
 {
@@ -16,7 +17,7 @@ public:
 
 	ESP8266() = default;
 
-	bool init(USART_TypeDef *usart, uint32_t baudrate);
+	bool init(Uart *uart);
 	void process();
 
 	bool isConnected();
@@ -34,8 +35,6 @@ public:
     bool hasIncomeData();
     uint8_t *getIncomeData();
 	bool getData(uint8_t *buffer, uint8_t size);
-
-	void uartInterrupt();
 	
 	char broadcastIP[17];
 
@@ -47,8 +46,6 @@ private:
 		WPA_WPA2_PSK = 4,
 	};
 
-	bool setupUart(USART_TypeDef *usart, uint32_t baudrate);
-	bool startReadUart();
 	bool setMode(Mode mode);
 	bool setAP(const char *ssid, const char *pass);
 	void sendCommand(const char *cmd, bool sendEnd = false);
@@ -56,19 +53,13 @@ private:
 	bool waitForAnswer(const char *answer1, uint16_t timeout, const char *answer2 = nullptr);
 	bool test();
 	bool reset();
-	void clearBuffer();
 	bool getIP();
 	void closeCurrentConnection();
 	bool enableEcho(bool state);
 	bool enableMultipleConnections(bool state);
 	
-	static void uartReceiveCallback(UART_HandleTypeDef *uart, uint16_t size);
-	static void uartInitCallback(UART_HandleTypeDef *huart);
-	static void uartDeinitCallback(UART_HandleTypeDef *huart);
-	
-	UART_HandleTypeDef mUart;
-	SString<255> mBuffer;
-	SString<64> mInputBuffer;
+    Uart *mUart = nullptr;
+	SString<256> mBuffer;
 	Mode mMode = Unknown;
 	uint32_t mLastConnectionCheck = 0;
 	SString<65> mStationSSIDWasConnected;

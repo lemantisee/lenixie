@@ -10,6 +10,7 @@
 #include "JsonObject.h"
 #include "MonitorCommand.h"
 #include "LogDump.h"
+#include "Uart.h"
 
 namespace {
 const uint32_t F_CPU = 72000000;
@@ -23,6 +24,7 @@ RTClock Clock;
 ESP8266 wifi;
 UsbDevice usbHost;
 LogDump logDumper;
+Uart uart;
 
 enum Command {
     DeviceID = 100,
@@ -79,42 +81,6 @@ bool systemClockInit()
 
     return true;
 }
-} // namespace
-
-extern "C" {
-
-void HAL_MspInit(void)
-{
-    __HAL_RCC_AFIO_CLK_ENABLE();
-    __HAL_RCC_PWR_CLK_ENABLE();
-    __HAL_RCC_GPIOA_CLK_ENABLE();
-    __HAL_RCC_GPIOB_CLK_ENABLE();
-}
-
-void SysTick_Handler()
-{
-    // called every 50us
-    HAL_SYSTICK_IRQHandler();
-
-    ++sysTicks;
-    if (sysTicks == 20) {
-        // called every 1ms
-        sysTicks = 0;
-        HAL_IncTick();
-    }
-
-    Indication.process();
-}
-
-void RTC_IRQHandler()
-{
-    Clock.interrupt();
-    const DateTime &time = Clock.getTime();
-    Indication.setNumber(time.hours / 10, time.hours % 10, time.minutes / 10, time.minutes % 10);
-    Indication.dimm(time.hours < 7);
-}
-
-void USART3_IRQHandler() { wifi.uartInterrupt(); }
 
 void dumpLogs() {
     LogDump dumper;
@@ -153,6 +119,67 @@ void processUsbCmd(const SString<64> &buffer)
     }
 }
 
+void initWifi(ESP8266 &esp) 
+{
+    if (!uart.init(USART3, 115200)) {
+        LOG("Unable to init uart");
+        return;
+    }
+
+    if (!esp.init(&uart)) {
+        LOG("Unable to init wifi");
+        return;
+    }
+
+    if (esp.isConnected()) {
+        return;
+    }
+
+    LOG("Connecting to wifi network %s", WifiCredentials::userSsid());
+    if (!esp.connectNetwork(WifiCredentials::userSsid(), WifiCredentials::userPassword())) {
+        LOG("Unable to connect to network");
+    }
+}
+
+} // namespace
+
+extern "C" {
+
+void HAL_MspInit(void)
+{
+    __HAL_RCC_AFIO_CLK_ENABLE();
+    __HAL_RCC_PWR_CLK_ENABLE();
+    __HAL_RCC_GPIOA_CLK_ENABLE();
+    __HAL_RCC_GPIOB_CLK_ENABLE();
+}
+
+void SysTick_Handler()
+{
+    // called every 50us
+    HAL_SYSTICK_IRQHandler();
+
+    ++sysTicks;
+    if (sysTicks == 20) {
+        // called every 1ms
+        sysTicks = 0;
+        HAL_IncTick();
+    }
+
+    Indication.process();
+}
+
+void RTC_IRQHandler()
+{
+    Clock.interrupt();
+    const DateTime &time = Clock.getTime();
+    if (!time.isNull()) {
+        Indication.setNumber(time.hours / 10, time.hours % 10, time.minutes / 10,
+                             time.minutes % 10);
+    }
+
+    Indication.dimm(time.hours < 7);
+}
+
 }
 
 int main(void)
@@ -164,6 +191,8 @@ int main(void)
         return 1;
     }
 
+    LOG("Started");
+
     Indication.setDecoderPins(GPIOB, GPIO_PIN_6, GPIO_PIN_8, GPIO_PIN_9, GPIO_PIN_7);
     Indication.setSign(DynamicIndication::MSBHourTube, GPIOA, GPIO_PIN_6);
     Indication.setSign(DynamicIndication::LSBHourTube, GPIOA, GPIO_PIN_5);
@@ -171,20 +200,7 @@ int main(void)
     Indication.setSign(DynamicIndication::LSBMinutesTube, GPIOA, GPIO_PIN_3);
     Indication.setNumber(1, 2, 3, 4);
 
-    LOG("Started");
-
-    bool wifiInited = wifi.init(USART3, 115200);
-
-    if (!wifiInited) {
-        LOG("Unable to init wifi");
-    }
-
-    if (wifiInited && !wifi.isConnected()) {
-        LOG("Connecting to wifi network %s", WifiCredentials::userSsid());
-        if(!wifi.connectNetwork(WifiCredentials::userSsid(), WifiCredentials::userPassword())){
-            LOG("Unable to connect to network");
-        }
-    }
+    initWifi(wifi);
 
     Clock.setTimeZone(3);
     Clock.init(&wifi);

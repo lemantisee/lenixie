@@ -147,6 +147,10 @@ void RTClock::syncTime(const char *ntpServer)
 
 void RTClock::interrupt()
 {
+    if (!mInited) {
+        return;
+    }
+
     __HAL_RTC_ALARM_CLEAR_FLAG(&mHandle, RTC_FLAG_SEC);
 }
 

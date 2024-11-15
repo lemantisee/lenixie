@@ -2,6 +2,7 @@ target_sources(${PROJECT_NAME} PRIVATE
     main.cpp
     MonitorCommand.h
     LogDump.h LogDump.cpp
+    Uart.h Uart.cpp
 
     Clock/DateTime.h Clock/DateTime.cpp
     Clock/NTPRequest.h Clock/NTPRequest.cpp
