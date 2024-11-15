@@ -1,9 +1,6 @@
 #include "EspAtCommand.h"
 
-EspAtCommand::EspAtCommand(const char *str)
-{
-    mString.append(str);
-}
+EspAtCommand::EspAtCommand(const char *str) { mString.append(str); }
 
 EspAtCommand &EspAtCommand::add(const char *str)
 {
@@ -27,7 +24,4 @@ EspAtCommand &EspAtCommand::add(uint32_t number)
     return *this;
 }
 
-const char *EspAtCommand::string() const
-{
-    return mString.c_str();
-}
+const char *EspAtCommand::string() const { return mString.c_str(); }

@@ -20,20 +20,11 @@ public:
         mCurrentByte = sizeToCopy;
     }
 
-    SString(const char *str)
-    {
-        *this = str;
-    }
+    SString(const char *str) { *this = str; }
 
-    SString(const SString &rvl)
-    {
-        *this = rvl;
-    }
+    SString(const SString &rvl) { *this = rvl; }
 
-    SString(SString &&rvl)
-    {
-        *this = std::move(rvl);
-    }
+    SString(SString &&rvl) { *this = std::move(rvl); }
 
     SString &operator=(SString &&rvl)
     {
@@ -87,15 +78,9 @@ public:
         return *this;
     }
 
-    void operator+=(char c)
-    {
-        append(c);
-    }
+    void operator+=(char c) { append(c); }
 
-    void operator+=(const char *str)
-    {
-        append(str);
-    }
+    void operator+=(const char *str) { append(str); }
 
     SString &append(char c)
     {

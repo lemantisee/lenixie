@@ -20,8 +20,9 @@ public:
         }
     }
 
-    StringType pop() {
-        if(empty()) {
+    StringType pop()
+    {
+        if (empty()) {
             return {};
         }
 

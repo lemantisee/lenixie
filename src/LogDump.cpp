@@ -69,7 +69,7 @@ SString<256> LogDump::escapeString(const SString<128> &str) const
 {
     SString<256> escString;
 
-    for (char c: str) {
+    for (char c : str) {
         if (c == 0) {
             break;
         }

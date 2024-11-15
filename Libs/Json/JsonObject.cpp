@@ -2,10 +2,7 @@
 
 #include <stdio.h>
 
-JsonObject::JsonObject()
-{
-    mBuffer.append('{');
-}
+JsonObject::JsonObject() { mBuffer.append('{'); }
 
 JsonObject::JsonObject(SString<64> string) : mBuffer(std::move(string))
 {
@@ -15,30 +12,30 @@ JsonObject::JsonObject(SString<64> string) : mBuffer(std::move(string))
 
 void JsonObject::add(const char *key, int value)
 {
-        if(mBuffer.size() > 1) {
-            mBuffer += ',';
-        }
+    if (mBuffer.size() > 1) {
+        mBuffer += ',';
+    }
 
-        addString(key);
+    addString(key);
 
-        mBuffer += ':';
+    mBuffer += ':';
 
-        SString<5> intStr;
-        snprintf(intStr.data(), intStr.capacity(), "%i", value);
-        mBuffer += intStr.data();
+    SString<5> intStr;
+    snprintf(intStr.data(), intStr.capacity(), "%i", value);
+    mBuffer += intStr.data();
 }
 
 void JsonObject::add(const char *key, const char *value)
 {
-        if(!mBuffer.empty()) {
-            mBuffer += ',';
-        }
+    if (!mBuffer.empty()) {
+        mBuffer += ',';
+    }
 
-        addString(key);
+    addString(key);
 
-        mBuffer += ':';
+    mBuffer += ':';
 
-        addString(value);
+    addString(value);
 }
 
 SString<64> &JsonObject::dump()
@@ -67,7 +64,7 @@ int JsonObject::getInt(const char *key, int defaultValue)
 }
 
 bool JsonObject::getBool(const char *key, bool defaultValue)
-{ 
+{
     return getInt(key, defaultValue ? 0 : 1);
 }
 

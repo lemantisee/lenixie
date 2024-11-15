@@ -31,8 +31,8 @@ DateTime DateTime::fromTimestamp(int64_t timestamp)
     return dateTime;
 }
 
-DateTime DateTime::localDatetime(int64_t utcTimestamp, uint8_t timezone) 
-{ 
+DateTime DateTime::localDatetime(int64_t utcTimestamp, uint8_t timezone)
+{
     int64_t localTimestamp = utcTimestamp + timezone * 60 * 60;
 
     std::tm *timeVal = std::gmtime(&localTimestamp);
@@ -41,7 +41,8 @@ DateTime DateTime::localDatetime(int64_t utcTimestamp, uint8_t timezone)
         return {};
     }
 
-    int8_t dst = calculateDST(timeVal->tm_mon, timeVal->tm_mday, timeVal->tm_wday, timeVal->tm_hour);
+    int8_t dst = calculateDST(timeVal->tm_mon, timeVal->tm_mday, timeVal->tm_wday,
+                              timeVal->tm_hour);
 
     localTimestamp += dst * 60 * 60;
 

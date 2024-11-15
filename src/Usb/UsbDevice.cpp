@@ -22,7 +22,8 @@ bool UsbDevice::sendData(const SString<64> &data)
     return mCustomHid.sendReport(&mHandle, {(uint8_t *)(data.c_str()), data.size()});
 }
 
-SString<64> UsbDevice::popData() { 
+SString<64> UsbDevice::popData()
+{
     SString<64> data;
     int size = mCustomHid.popReport({data.data(), data.capacity()});
     data.resize(size);

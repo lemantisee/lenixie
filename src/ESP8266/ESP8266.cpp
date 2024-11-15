@@ -8,18 +8,15 @@
 #include "WifiCredentials.h"
 #include "Uart.h"
 
-namespace
-{
-    constexpr uint32_t checkConnectionPeriodMs = 30 * 60 * 1000; // 30 min
+namespace {
+constexpr uint32_t checkConnectionPeriodMs = 30 * 60 * 1000; // 30 min
 } // namespace
-
 
 bool ESP8266::init(Uart *uart)
 {
     mUart = uart;
-    mUart->onReceive([this](const SString<64> &data){
-        mBuffer.append(data.c_str(), data.size());
-    });
+    mUart->onReceive(
+        [this](const SString<64> &data) { mBuffer.append(data.c_str(), data.size()); });
 
     HAL_Delay(500);
 
@@ -67,7 +64,8 @@ void ESP8266::process()
     LOG("Reconnected to previuos wifi");
 }
 
-void ESP8266::sendCommand(const char *cmd, bool sendEnd) {
+void ESP8266::sendCommand(const char *cmd, bool sendEnd)
+{
     mBuffer.clear();
     mUart->send(cmd, 100);
     if (sendEnd) {
@@ -76,10 +74,7 @@ void ESP8266::sendCommand(const char *cmd, bool sendEnd) {
     }
 }
 
-void ESP8266::sendCommand(const EspAtCommand &cmd)
-{
-    sendCommand(cmd.string(), true);
-}
+void ESP8266::sendCommand(const EspAtCommand &cmd) { sendCommand(cmd.string(), true); }
 
 bool ESP8266::setMode(Mode mode)
 {
@@ -92,18 +87,13 @@ bool ESP8266::setMode(Mode mode)
     EspAtCommand cmd("AT+CWMODE=");
     cmd.add(mMode);
 
-    switch (mMode)
-    {
-    case Station:
-        break;
-    case SoftAP:
-        break;
-    case StationAndSoftAP:
-        break;
-    default:
-        return false;
+    switch (mMode) {
+    case Station: break;
+    case SoftAP: break;
+    case StationAndSoftAP: break;
+    default: return false;
     }
-    
+
     sendCommand(cmd);
     return waitForAnswer("OK", 5000);
 }
@@ -147,12 +137,13 @@ bool ESP8266::connectNetwork(const char *ssid, const char *password)
     return ok;
 }
 
-bool ESP8266::test() {
+bool ESP8266::test()
+{
     sendCommand("AT", true);
     return waitForAnswer("OK", 1000);
 }
 
-bool ESP8266::connectToServerUDP(const char* host, uint16_t port)
+bool ESP8266::connectToServerUDP(const char *host, uint16_t port)
 {
     //AT+CIPSTART="TCP","192.168.0.65",333
     //"UDP", "0", 0, 1025, 2
@@ -165,7 +156,7 @@ bool ESP8266::connectToServerUDP(const char* host, uint16_t port)
     return waitForAnswer("OK", 1000, "ALREADY");
 }
 
-bool ESP8266::sendUDPpacket(const char* msg, uint16_t size)
+bool ESP8266::sendUDPpacket(const char *msg, uint16_t size)
 {
     EspAtCommand cmd("AT+CIPSEND=");
     cmd.add(size);
@@ -176,18 +167,19 @@ bool ESP8266::sendUDPpacket(const char* msg, uint16_t size)
     }
 
     mBuffer.clear();
-    mUart->send((uint8_t*)msg, size, 100);
+    mUart->send((uint8_t *)msg, size, 100);
 
     return waitForAnswer("OK", 2000);
 }
 
-bool ESP8266::getIP() {
+bool ESP8266::getIP()
+{
     //AT + CIFSR
 
     char ipoctet1[4];
-	char ipoctet2[4];
-	char ipoctet3[4];
-	char ipoctet4[4];
+    char ipoctet2[4];
+    char ipoctet3[4];
+    char ipoctet4[4];
 
     memset(broadcastIP, 0, 17);
     memset(ipoctet1, 0, 4);
@@ -221,7 +213,7 @@ bool ESP8266::getData(uint8_t *buffer, uint8_t size)
     SString<12> answer;
     answer.append("+IPD,").appendNumber(size);
 
-    if (!waitForAnswer(answer.c_str(), 2000)){
+    if (!waitForAnswer(answer.c_str(), 2000)) {
         return false;
     }
 
@@ -244,14 +236,15 @@ bool ESP8266::switchToAP()
         return false;
     }
 
-	if (!setAP(WifiCredentials::defaultApSsid(), WifiCredentials::defaultApPassword())) {
+    if (!setAP(WifiCredentials::defaultApSsid(), WifiCredentials::defaultApPassword())) {
         return false;
     }
 
     return connectToServerUDP("192.168.4.255", 1111);
 }
 
-bool ESP8266::setAP(const char *ssid, const char *pass) {
+bool ESP8266::setAP(const char *ssid, const char *pass)
+{
     //AT+CWSAP="ssid","password",10,4
 
     const uint8_t channel = 10;
@@ -290,17 +283,16 @@ bool ESP8266::SendString(const char *str, const char *ip, uint16_t port)
     return waitForAnswer("SEND OK", 2000);
 }
 
-uint8_t * ESP8266::getIncomeData() {
-    char *ptr = strchr((char *)mBuffer.data(), ':');
-    return ((uint8_t*)ptr + 1);
-}
-
-bool ESP8266::hasIncomeData()
+uint8_t *ESP8266::getIncomeData()
 {
-    return mBuffer.contains("+IPD");
+    char *ptr = strchr((char *)mBuffer.data(), ':');
+    return ((uint8_t *)ptr + 1);
 }
 
-void ESP8266::closeCurrentConnection() {
+bool ESP8266::hasIncomeData() { return mBuffer.contains("+IPD"); }
+
+void ESP8266::closeCurrentConnection()
+{
     sendCommand("AT+CIPCLOSE", true);
     waitForAnswer("OK", 1000);
 }
@@ -323,7 +315,8 @@ bool ESP8266::enableMultipleConnections(bool state)
     return waitForAnswer("OK", 2000);
 }
 
-bool ESP8266::setAPip(const char *ip) {
+bool ESP8266::setAPip(const char *ip)
+{
     EspAtCommand cmd("AT+CIPAP=");
     cmd.add(ip);
 
@@ -331,13 +324,15 @@ bool ESP8266::setAPip(const char *ip) {
     return waitForAnswer("OK", 5000);
 }
 
-bool ESP8266::reset() {
+bool ESP8266::reset()
+{
     sendCommand("AT+RST", true);
     HAL_Delay(10000);
     return true;
 }
 
-bool ESP8266::isConnected() {
+bool ESP8266::isConnected()
+{
     if (mMode != Station && mMode != StationAndSoftAP) {
         return false;
     }
@@ -363,7 +358,7 @@ bool ESP8266::isConnected() {
 
     const uint32_t pos = *posOpt + std::strlen(statusStr);
 
-    if (pos >=  mBuffer.size()) {
+    if (pos >= mBuffer.size()) {
         return false;
     }
 

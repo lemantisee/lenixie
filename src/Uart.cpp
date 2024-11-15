@@ -7,7 +7,7 @@ Uart *uartInstance = nullptr;
 }
 
 extern "C" {
-    void USART3_IRQHandler() { uartInstance->interrupt(); }
+void USART3_IRQHandler() { uartInstance->interrupt(); }
 }
 
 bool Uart::init(USART_TypeDef *usart, uint32_t baudrate)
@@ -33,12 +33,12 @@ bool Uart::init(USART_TypeDef *usart, uint32_t baudrate)
 
 void Uart::interrupt() { HAL_UART_IRQHandler(&mHandle); }
 
-void Uart::send(const uint8_t *data, uint16_t size, uint32_t timeout) 
+void Uart::send(const uint8_t *data, uint16_t size, uint32_t timeout)
 {
     HAL_UART_Transmit(&mHandle, data, size, timeout);
 }
 
-void Uart::send(const char *str, uint32_t timeout) 
+void Uart::send(const char *str, uint32_t timeout)
 {
     HAL_UART_Transmit(&mHandle, (uint8_t *)str, std::strlen(str), timeout);
 }
@@ -60,19 +60,21 @@ bool Uart::setup(USART_TypeDef *usart, uint32_t baudrate)
     mHandle.Init.HwFlowCtl = UART_HWCONTROL_NONE;
     mHandle.Init.OverSampling = UART_OVERSAMPLING_16;
 
-    if (HAL_UART_RegisterCallback(&mHandle, HAL_UART_MSPINIT_CB_ID, Uart::uartInitCallback) != HAL_OK ) {
+    if (HAL_UART_RegisterCallback(&mHandle, HAL_UART_MSPINIT_CB_ID, Uart::uartInitCallback)
+        != HAL_OK) {
         return false;
     }
 
-    if (HAL_UART_RegisterCallback(&mHandle, HAL_UART_MSPDEINIT_CB_ID, Uart::uartDeinitCallback) != HAL_OK ) {
+    if (HAL_UART_RegisterCallback(&mHandle, HAL_UART_MSPDEINIT_CB_ID, Uart::uartDeinitCallback)
+        != HAL_OK) {
         return false;
     }
 
-    if (HAL_UART_Init(&mHandle) != HAL_OK ) {
+    if (HAL_UART_Init(&mHandle) != HAL_OK) {
         return false;
     }
 
-    if (HAL_UART_RegisterRxEventCallback(&mHandle, Uart::uartReceiveCallback) != HAL_OK ) {
+    if (HAL_UART_RegisterRxEventCallback(&mHandle, Uart::uartReceiveCallback) != HAL_OK) {
         return false;
     }
 
@@ -82,7 +84,9 @@ bool Uart::setup(USART_TypeDef *usart, uint32_t baudrate)
 bool Uart::startRead()
 {
     mInputBuffer.clear();
-    return HAL_UARTEx_ReceiveToIdle_IT(&mHandle, (uint8_t *)mInputBuffer.data(), mInputBuffer.capacity()) == HAL_OK;
+    return HAL_UARTEx_ReceiveToIdle_IT(&mHandle, (uint8_t *)mInputBuffer.data(),
+                                       mInputBuffer.capacity())
+           == HAL_OK;
 }
 
 void Uart::uartReceiveCallback(UART_HandleTypeDef *uart, uint16_t size)
@@ -111,7 +115,7 @@ void Uart::uartInitCallback(UART_HandleTypeDef *huart)
         return;
     }
 
-    if (huart->Instance != uartInstance->mHandle.Instance){
+    if (huart->Instance != uartInstance->mHandle.Instance) {
         return;
     }
     __HAL_RCC_USART3_CLK_ENABLE();
@@ -138,7 +142,7 @@ void Uart::uartDeinitCallback(UART_HandleTypeDef *huart)
         return;
     }
 
-    if (huart->Instance != uartInstance->mHandle.Instance){
+    if (huart->Instance != uartInstance->mHandle.Instance) {
         return;
     }
 

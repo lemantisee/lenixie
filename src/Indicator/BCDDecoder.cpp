@@ -1,6 +1,7 @@
 #include "BCDDecoder.h"
 
-void BCDDecoder::init(GPIO_TypeDef *port, uint16_t Apin, uint16_t Bpin, uint16_t Cpin, uint16_t Dpin)
+void BCDDecoder::init(GPIO_TypeDef *port, uint16_t Apin, uint16_t Bpin, uint16_t Cpin,
+                      uint16_t Dpin)
 {
     mPort = port;
     mApin = Apin;
@@ -20,11 +21,9 @@ void BCDDecoder::init(GPIO_TypeDef *port, uint16_t Apin, uint16_t Bpin, uint16_t
 
 void BCDDecoder::setValue(uint8_t value)
 {
-    
     uint16_t pinStatus = 0;
 
-    if ((value & (1 << 0)))
-    {
+    if ((value & (1 << 0))) {
         pinStatus |= mApin;
     }
     if ((value & (1 << 1))) {

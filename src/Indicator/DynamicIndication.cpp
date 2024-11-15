@@ -3,12 +3,11 @@
 #include "Logger.h"
 #include "SString.h"
 
-namespace
-{
-    constexpr uint16_t indicationFrameTime = 320; // 16ms
-    constexpr uint16_t fullBrightnessTime = 50; // 3 ms
-    constexpr uint8_t dimmedTime = 4; // 200us
-    constexpr uint32_t fadeTime = 10000; //500ms
+namespace {
+constexpr uint16_t indicationFrameTime = 320; // 16ms
+constexpr uint16_t fullBrightnessTime = 50;   // 3 ms
+constexpr uint8_t dimmedTime = 4;             // 200us
+constexpr uint32_t fadeTime = 10000;          //500ms
 } // namespace
 
 DynamicIndication::DynamicIndication()
@@ -17,7 +16,8 @@ DynamicIndication::DynamicIndication()
     mSingOnTime = fullBrightnessTime;
 }
 
-void DynamicIndication::setDecoderPins(GPIO_TypeDef *port, uint16_t Apin, uint16_t Bpin, uint16_t Cpin, uint16_t Dpin)
+void DynamicIndication::setDecoderPins(GPIO_TypeDef *port, uint16_t Apin, uint16_t Bpin,
+                                       uint16_t Cpin, uint16_t Dpin)
 {
     mDecoder.init(port, Apin, Bpin, Cpin, Dpin);
     mTimer = 0;
@@ -69,7 +69,8 @@ void DynamicIndication::dimm(bool state)
     mVisualStage = state ? FadeIn : FadeOut;
 }
 
-void DynamicIndication::setNumber(uint8_t number1, uint8_t number2, uint8_t number3, uint8_t number4)
+void DynamicIndication::setNumber(uint8_t number1, uint8_t number2, uint8_t number3,
+                                  uint8_t number4)
 {
     mSigns[0].number = number1;
     mSigns[1].number = number2;
@@ -96,16 +97,13 @@ const DynamicIndication::Sign *DynamicIndication::getCurrentSign()
 {
     ++mTimer;
 
-    for (uint8_t i = 0; i < mSigns.size(); ++i)
-    {
-        if (mTimer == (i * mSingOnTime + 1))
-        {
+    for (uint8_t i = 0; i < mSigns.size(); ++i) {
+        if (mTimer == (i * mSingOnTime + 1)) {
             return &mSigns[i];
         }
     }
 
-    if (mTimer >= indicationFrameTime + 1)
-    {
+    if (mTimer >= indicationFrameTime + 1) {
         mTimer = 0;
     }
 
@@ -143,8 +141,8 @@ void DynamicIndication::updateDimm()
         mSingOnTime = dimmedTime;
         mVisualStage = Dimmed;
         return;
-    } 
-    
+    }
+
     if (mVisualStage == FadeOut) {
         mSingOnTime = fullBrightnessTime;
         mVisualStage = FullBrightness;

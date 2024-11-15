@@ -26,6 +26,4 @@ const uint8_t endpont0_Size = 64;
 
 const uint8_t defualtEndpointInAddress = 0x80;
 const uint8_t defualtEndpointOutAddress = 0x00;
-}
-
-
+} // namespace usb

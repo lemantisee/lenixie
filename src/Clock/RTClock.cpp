@@ -5,33 +5,31 @@
 #include "SString.h"
 #include "Logger.h"
 
-namespace
+namespace {
+constexpr uint32_t ntpPeriodSync = 43200000; // 12 hours
+const char *ntpServer = "pool.ntp.org";
+void rtcInit(RTC_HandleTypeDef *hrtc)
 {
-    constexpr uint32_t ntpPeriodSync = 43200000; // 12 hours
-    const char *ntpServer = "pool.ntp.org";
-    void rtcInit(RTC_HandleTypeDef *hrtc)
-    {
-        if (hrtc->Instance == RTC) {
-            HAL_PWR_EnableBkUpAccess();
-            __HAL_RCC_BKP_CLK_ENABLE();
-            __HAL_RCC_RTC_ENABLE();
+    if (hrtc->Instance == RTC) {
+        HAL_PWR_EnableBkUpAccess();
+        __HAL_RCC_BKP_CLK_ENABLE();
+        __HAL_RCC_RTC_ENABLE();
 
-            HAL_NVIC_SetPriority(RTC_IRQn, 0, 0);
-            HAL_NVIC_EnableIRQ(RTC_IRQn);
-        }
+        HAL_NVIC_SetPriority(RTC_IRQn, 0, 0);
+        HAL_NVIC_EnableIRQ(RTC_IRQn);
     }
+}
 
-    void rtcDeinit(RTC_HandleTypeDef *hrtc)
-    {
-        if (hrtc->Instance == RTC) {
-            __HAL_RCC_RTC_DISABLE();
-        }
+void rtcDeinit(RTC_HandleTypeDef *hrtc)
+{
+    if (hrtc->Instance == RTC) {
+        __HAL_RCC_RTC_DISABLE();
     }
+}
 
-    bool logRtcTimeAfterSync = false;
+bool logRtcTimeAfterSync = false;
 
 } // namespace
-
 
 void RTClock::init(ESP8266 *wifi)
 {
@@ -41,13 +39,13 @@ void RTClock::init(ESP8266 *wifi)
 
     HAL_RTC_RegisterCallback(&mHandle, HAL_RTC_MSPINIT_CB_ID, &rtcInit);
     HAL_RTC_RegisterCallback(&mHandle, HAL_RTC_MSPDEINIT_CB_ID, &rtcDeinit);
-    
+
     HAL_RTC_Init(&mHandle);
     __HAL_RTC_ALARM_ENABLE_IT(&mHandle, RTC_IT_SEC);
 
     mNtp.init(wifi);
     mInited = true;
-    
+
     syncTime(ntpServer);
 }
 
@@ -119,8 +117,7 @@ void RTClock::syncTime(const char *ntpServer)
     logRtcTimeAfterSync = true;
 
     if (auto timestampOpt = mNtp.getTimestamp(ntpServer)) {
-
-        const DateTime time = DateTime::fromTimestamp(*timestampOpt + mTimezone * 60 *60);
+        const DateTime time = DateTime::fromTimestamp(*timestampOpt + mTimezone * 60 * 60);
         LOG("Ntp Date: %i-%02i-%02i(%i)", time.year, time.month, time.monthDay, time.weekDay);
         LOG("Ntp Time: %02i:%02i:%02i", time.hours, time.minutes, time.seconds);
 
@@ -175,7 +172,4 @@ bool RTClock::setRtcDate(uint32_t year, uint8_t month, uint8_t mday, uint8_t wda
     return HAL_RTC_SetDate(&mHandle, &data, RTC_FORMAT_BIN) == HAL_OK;
 }
 
-void RTClock::setTimeZone(uint8_t timezone)
-{
-    mTimezone = timezone;
-}
+void RTClock::setTimeZone(uint8_t timezone) { mTimezone = timezone; }

@@ -82,7 +82,8 @@ bool systemClockInit()
     return true;
 }
 
-void dumpLogs() {
+void dumpLogs()
+{
     LogDump dumper;
 
     while (!dumper.empty()) {
@@ -119,7 +120,7 @@ void processUsbCmd(const SString<64> &buffer)
     }
 }
 
-void initWifi(ESP8266 &esp) 
+void initWifi(ESP8266 &esp)
 {
     if (!uart.init(USART3, 115200)) {
         LOG("Unable to init uart");
@@ -179,7 +180,6 @@ void RTC_IRQHandler()
 
     Indication.dimm(time.hours < 7);
 }
-
 }
 
 int main(void)

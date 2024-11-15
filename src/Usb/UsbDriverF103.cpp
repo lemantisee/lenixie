@@ -6,7 +6,7 @@ namespace {
 PCD_HandleTypeDef mPcd;
 }
 
-extern "C"{
+extern "C" {
 void USB_LP_CAN1_RX0_IRQHandler() { HAL_PCD_IRQHandler(&mPcd); }
 
 void HAL_PCD_MspInit(PCD_HandleTypeDef *pcdHandle)
@@ -25,8 +25,7 @@ void HAL_PCD_MspDeInit(PCD_HandleTypeDef *pcdHandle)
         HAL_NVIC_DisableIRQ(USB_LP_CAN1_RX0_IRQn);
     }
 }
-
-} 
+}
 
 bool UsbDriverF103::openEndpoint(uint8_t ep_addr, UsbHandle::EndpointType enType, uint16_t ep_mps)
 {
@@ -84,9 +83,9 @@ uint32_t UsbDriverF103::getRxDataSize(uint8_t ep_addr)
 
 bool UsbDriverF103::initInterface(UsbHandle *pdev)
 {
-    #if USE_HAL_PCD_REGISTER_CALLBACKS != 1
-    #error "Error. PCD callback not enabled"
-    #endif
+#if USE_HAL_PCD_REGISTER_CALLBACKS != 1
+#error "Error. PCD callback not enabled"
+#endif
 
     mPcd.pData = pdev;
     mPcd.Instance = USB;
@@ -98,7 +97,6 @@ bool UsbDriverF103::initInterface(UsbHandle *pdev)
     if (HAL_PCD_Init(&mPcd) != HAL_OK) {
         return false;
     }
-
 
     HAL_PCD_RegisterCallback(&mPcd, HAL_PCD_SOF_CB_ID, UsbDriverF103::PCD_SOFCallback);
     HAL_PCD_RegisterCallback(&mPcd, HAL_PCD_SETUPSTAGE_CB_ID,

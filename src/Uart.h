@@ -20,9 +20,9 @@ public:
     void onReceive(std::function<void(const SString<64> &data)> func);
 
 private:
-	static void uartReceiveCallback(UART_HandleTypeDef *uart, uint16_t size);
-	static void uartInitCallback(UART_HandleTypeDef *huart);
-	static void uartDeinitCallback(UART_HandleTypeDef *huart);
+    static void uartReceiveCallback(UART_HandleTypeDef *uart, uint16_t size);
+    static void uartInitCallback(UART_HandleTypeDef *huart);
+    static void uartDeinitCallback(UART_HandleTypeDef *huart);
 
     bool setup(USART_TypeDef *usart, uint32_t baudrate);
 

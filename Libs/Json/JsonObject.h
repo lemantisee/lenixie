@@ -3,9 +3,9 @@
 #include "SString.h"
 #include "lwjson.h"
 
- class JsonObject
- {
- public:
+class JsonObject
+{
+public:
     JsonObject();
     JsonObject(SString<64> string);
 
@@ -24,5 +24,4 @@ private:
     lwjson_token_t mLwTokens[4];
     lwjson_t mLwJson;
     bool mInParsed = false;
- };
- 
+};

@@ -8,32 +8,28 @@
 #include "Logger.h"
 #include "SString.h"
 
-namespace
+namespace {
+constexpr uint64_t NTP_TIMESTAMP_DELTA = 2208988800;
+
+struct ntp_packet
 {
-    constexpr uint64_t NTP_TIMESTAMP_DELTA = 2208988800;
+    uint32_t test = 0;
+    uint32_t rootDelay = 0;      // Total round trip delay time.
+    uint32_t rootDispersion = 0; // Max error aloud from primary clock source.
+    uint32_t refId = 0;          // Reference clock ide
+    uint32_t refTm_s = 0;        // Reference time-stamp seconds.
+    uint32_t refTm_f = 0;        // Reference time-stamp fraction of a
+    uint32_t origTm_s = 0;       // Originate time-stamp seconds.
+    uint32_t origTm_f = 0;       // Originate time-stamp fraction of a
+    uint32_t rxTm_s = 0;         // Received time-stamp seconds.
+    uint32_t rxTm_f = 0;         // Received time-stamp fraction of a second.
 
-    struct ntp_packet
-    {
-        uint32_t test = 0;
-        uint32_t rootDelay = 0;      // Total round trip delay time.
-        uint32_t rootDispersion = 0; // Max error aloud from primary clock source.
-        uint32_t refId = 0;          // Reference clock ide
-        uint32_t refTm_s = 0;        // Reference time-stamp seconds.
-        uint32_t refTm_f = 0;        // Reference time-stamp fraction of a
-        uint32_t origTm_s = 0;       // Originate time-stamp seconds.
-        uint32_t origTm_f = 0;       // Originate time-stamp fraction of a
-        uint32_t rxTm_s = 0;         // Received time-stamp seconds.
-        uint32_t rxTm_f = 0;         // Received time-stamp fraction of a second.
+    uint32_t txTm_s = 0; // Transmit time-stamp seconds.
+    uint32_t txTm_f = 0; // Transmit time-stamp fraction of a second.
+};
+} // namespace
 
-        uint32_t txTm_s = 0;         // Transmit time-stamp seconds.
-        uint32_t txTm_f = 0;         // Transmit time-stamp fraction of a second.
-    };
-}
-
-void NTPRequest::init(ESP8266 *wifi)
-{
-    mWifi = wifi;
-}
+void NTPRequest::init(ESP8266 *wifi) { mWifi = wifi; }
 
 std::optional<int64_t> NTPRequest::getNtpTimestamp()
 {
@@ -74,7 +70,4 @@ std::optional<int64_t> NTPRequest::getTimestamp(const char *server)
     return std::nullopt;
 }
 
-uint32_t NTPRequest::htonl(uint32_t val) const
-{
-    return __builtin_bswap32(val);
-}
+uint32_t NTPRequest::htonl(uint32_t val) const { return __builtin_bswap32(val); }

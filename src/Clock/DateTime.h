@@ -5,7 +5,6 @@
 
 class DateTime
 {
-    
 public:
     uint32_t year = 0;
     uint8_t month = 0;

@@ -148,8 +148,9 @@ bool UsbHandle::dataOutStage(uint8_t epnum, uint8_t *pdata)
         if (endpoint->currentLength > endpoint->maxPacketLength) {
             endpoint->currentLength -= endpoint->maxPacketLength;
 
-            mDriver->prepareReceive(usb::defualtEndpointOutAddress, {pdata,
-                                    std::min(endpoint->currentLength, endpoint->maxPacketLength)});
+            mDriver->prepareReceive(usb::defualtEndpointOutAddress,
+                                    {pdata, std::min(endpoint->currentLength,
+                                                     endpoint->maxPacketLength)});
             return true;
         }
 
@@ -509,9 +510,7 @@ bool UsbHandle::sendConfig(const UsbSetupRequest &req)
 
     switch (mState) {
     case DeviceDefault:
-    case DeviceAddressed:
-        mConfigDefault = 0;
-        return sendData(uint8_t(mConfigDefault));
+    case DeviceAddressed: mConfigDefault = 0; return sendData(uint8_t(mConfigDefault));
     case DeviceConfigured: return sendData(uint8_t(mConfigIndex));
     default: break;
     }

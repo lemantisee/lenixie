@@ -223,8 +223,8 @@ bool UsbCustomHid::init(UsbHandle *pdev, uint8_t cfgidx)
     }
 
     // Prepare Out endpoint to receive 1st packet */
-    pdev->getDriver()->prepareReceive(UsbCustomHid::endpointOutAddress, {mReportBuffer,
-                                      customHidOutReportBufferSize});
+    pdev->getDriver()->prepareReceive(UsbCustomHid::endpointOutAddress,
+                                      {mReportBuffer, customHidOutReportBufferSize});
 
     return true;
 }
@@ -270,8 +270,8 @@ bool UsbCustomHid::dataIn(UsbHandle *pdev, uint8_t epnum)
 bool UsbCustomHid::dataOut(UsbHandle *pdev, uint8_t epnum)
 {
     onReceive(mReportBuffer, customHidOutReportBufferSize);
-    pdev->getDriver()->prepareReceive(UsbCustomHid::endpointOutAddress, {mReportBuffer,
-                                      customHidOutReportBufferSize});
+    pdev->getDriver()->prepareReceive(UsbCustomHid::endpointOutAddress,
+                                      {mReportBuffer, customHidOutReportBufferSize});
 
     return true;
 }
@@ -309,14 +309,16 @@ bool UsbCustomHid::sendReport(UsbHandle *pdev, const std::span<uint8_t> &data)
         return false;
     }
 
-    while(mState == HidBusy) {}
+    while (mState == HidBusy) {
+    }
 
     std::array<uint8_t, endpointInSize> dataBuffer;
     dataBuffer.fill(0);
     std::memcpy(dataBuffer.data(), data.data(), data.size());
 
     mState = HidBusy;
-    return pdev->getDriver()->transmit(UsbCustomHid::endpointInAddress, {dataBuffer.data(), dataBuffer.size()});
+    return pdev->getDriver()->transmit(UsbCustomHid::endpointInAddress,
+                                       {dataBuffer.data(), dataBuffer.size()});
 }
 
 uint8_t UsbCustomHid::getEndpointInBufferSize() { return endpointInSize; }

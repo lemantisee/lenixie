@@ -11,8 +11,8 @@ public:
     EspAtCommand &add(const char *str);
     EspAtCommand &add(uint32_t number);
     const char *string() const;
-private:
 
+private:
     SString<255> mString;
     bool mHasArgument = false;
 };

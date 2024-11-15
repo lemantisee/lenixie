@@ -10,7 +10,7 @@ class ESP8266;
 class NTPRequest
 {
 public:
-    NTPRequest () = default;
+    NTPRequest() = default;
 
     void init(ESP8266 *wifi);
     std::optional<int64_t> getTimestamp(const char *server);
