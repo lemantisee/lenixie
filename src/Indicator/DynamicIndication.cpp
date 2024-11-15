@@ -1,8 +1,5 @@
 #include "DynamicIndication.h"
 
-#include "Logger.h"
-#include "SString.h"
-
 namespace {
 constexpr uint16_t indicationFrameTime = 320; // 16ms
 constexpr uint16_t fullBrightnessTime = 50;   // 3 ms

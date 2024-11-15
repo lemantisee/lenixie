@@ -3,7 +3,6 @@
 #include "UsbDriverF103.h"
 #include "UsbDeviceDescriptor.h"
 #include "CustomHid.h"
-#include "Logger.h"
 
 class UsbDevice
 {

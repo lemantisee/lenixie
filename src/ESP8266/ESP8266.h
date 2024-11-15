@@ -10,8 +10,6 @@ class Uart;
 class ESP8266
 {
 public:
-    enum Mode { Unknown = 0, Station = 1, SoftAP = 2, StationAndSoftAP = 3 };
-
     ESP8266() = default;
 
     bool init(Uart *uart);
@@ -33,8 +31,6 @@ public:
     uint8_t *getIncomeData();
     bool getData(uint8_t *buffer, uint8_t size);
 
-    char broadcastIP[17];
-
 private:
     enum Encryption {
         Open = 0,
@@ -42,6 +38,7 @@ private:
         WPA2_PSK = 3,
         WPA_WPA2_PSK = 4,
     };
+    enum Mode { Unknown = 0, Station = 1, SoftAP = 2, StationAndSoftAP = 3 };
 
     bool setMode(Mode mode);
     bool setAP(const char *ssid, const char *pass);
@@ -50,7 +47,6 @@ private:
     bool waitForAnswer(const char *answer1, uint16_t timeout, const char *answer2 = nullptr);
     bool test();
     bool reset();
-    bool getIP();
     void closeCurrentConnection();
     bool enableEcho(bool state);
     bool enableMultipleConnections(bool state);

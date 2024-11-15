@@ -166,7 +166,7 @@ public:
     void resize(uint32_t size)
     {
         mCurrentByte = size;
-        // std::fill(mBuffer.begin() + mCurrentByte, mBuffer.end(), 0);
+        std::fill(mBuffer.begin() + mCurrentByte, mBuffer.end(), 0);
     }
 
     const char *c_str() const { return mBuffer.data(); }

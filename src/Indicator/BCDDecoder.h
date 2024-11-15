@@ -1,7 +1,7 @@
 #pragma once
 
 #include "stm32f1xx.h"
-#include <stdint.h>
+#include <cstdint>
 
 class BCDDecoder
 {

@@ -125,7 +125,6 @@ bool ESP8266::connectNetwork(const char *ssid, const char *password)
 
     EspAtCommand cmd("AT+CWJAP_CUR=");
     cmd.add(ssid).add(password);
-    LOG(cmd.string());
 
     sendCommand(cmd);
     const bool ok = waitForAnswer("OK", 20000);
@@ -170,41 +169,6 @@ bool ESP8266::sendUDPpacket(const char *msg, uint16_t size)
     mUart->send((uint8_t *)msg, size, 100);
 
     return waitForAnswer("OK", 2000);
-}
-
-bool ESP8266::getIP()
-{
-    //AT + CIFSR
-
-    char ipoctet1[4];
-    char ipoctet2[4];
-    char ipoctet3[4];
-    char ipoctet4[4];
-
-    memset(broadcastIP, 0, 17);
-    memset(ipoctet1, 0, 4);
-    memset(ipoctet2, 0, 4);
-    memset(ipoctet3, 0, 4);
-    memset(ipoctet4, 0, 4);
-    sendCommand("AT+CIFSR", true);
-    waitForAnswer("OK", 1000);
-    char *str1 = strchr((char *)mBuffer.data(), '"');
-    char *str2 = strchr(str1 + 1, '"');
-    char iptmp[17];
-    strncpy(iptmp, str1 + 1, str2 - str1);
-    char *tmp = iptmp;
-    strcpy(ipoctet1, strsep(&tmp, "."));
-    strcpy(ipoctet2, strsep(&tmp, "."));
-    strcpy(ipoctet3, strsep(&tmp, "."));
-    strcpy(ipoctet4, strsep(&tmp, "."));
-    strcat(broadcastIP, ipoctet1);
-    strcat(broadcastIP, ".");
-    strcat(broadcastIP, ipoctet2);
-    strcat(broadcastIP, ".");
-    strcat(broadcastIP, ipoctet3);
-    strcat(broadcastIP, ".");
-    strcat(broadcastIP, "255");
-    return true;
 }
 
 bool ESP8266::getData(uint8_t *buffer, uint8_t size)
