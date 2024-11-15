@@ -25,8 +25,7 @@ void DynamicIndication::setDecoderPins(GPIO_TypeDef *port, uint16_t Apin, uint16
 
 void DynamicIndication::setSign(Tube tube, GPIO_TypeDef *port, uint16_t pin)
 {
-    if (tube >= mSigns.size())
-    {
+    if (tube >= mSigns.size()) {
         return;
     }
 
@@ -48,14 +47,12 @@ void DynamicIndication::process()
 
     updateDimm();
 
-    if (const Sign *sign = getCurrentSign())
-    {
+    if (const Sign *sign = getCurrentSign()) {
         clearSigns();
-        if (!sign->isDummy) {
+        if (sign->port && !sign->isDummy) {
             HAL_GPIO_WritePin(sign->port, sign->pin, GPIO_PIN_SET);
             mDecoder.setValue(sign->number);
         }
-
     }
 }
 
@@ -82,13 +79,15 @@ void DynamicIndication::setNumber(uint8_t number1, uint8_t number2, uint8_t numb
 
 void DynamicIndication::clearSigns()
 {
-    for (uint8_t i = 0; i < 4; i++)
-    {
-        HAL_GPIO_WritePin(mSigns[i].port, mSigns[i].pin, GPIO_PIN_RESET);
+    for (uint8_t i = 0; i < 4; i++) {
+        const Sign &sign = mSigns[i];
+        if (!sign.port) {
+            continue;
+        }
+        HAL_GPIO_WritePin(sign.port, sign.pin, GPIO_PIN_RESET);
     }
 
-    for (int i = 0; i < 4000; i++)
-    {
+    for (int i = 0; i < 4000; i++) {
         asm("nop");
     }
 }

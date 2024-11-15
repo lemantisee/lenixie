@@ -187,11 +187,11 @@ int main(void)
     HAL_Init();
     systemClockInit();
 
+    LOG("Started");
+
     if (!usbHost.init()) {
         return 1;
     }
-
-    LOG("Started");
 
     Indication.setDecoderPins(GPIOB, GPIO_PIN_6, GPIO_PIN_8, GPIO_PIN_9, GPIO_PIN_7);
     Indication.setSign(DynamicIndication::MSBHourTube, GPIOA, GPIO_PIN_6);
