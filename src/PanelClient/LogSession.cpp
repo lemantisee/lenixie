@@ -1,24 +1,46 @@
-#include "LogDump.h"
+#include "LogSession.h"
 
 #include "Logger.h"
-#include "JsonObject.h"
-#include "MonitorCommand.h"
 
-SString<64> LogDump::popReport()
+void LogSession::handle(const PanelMessage &msg)
 {
+    if (msg.cmd != GetLog) {
+        MessageSession *next = getNext();
+        if (MessageSession *next = getNext()) {
+            next->handle(msg);
+            return;
+        }
+    }
+
+    if (empty()) {
+        sendEnd();
+        return;
+    }
+
+    SString<64> logMsg = popReport();
+    if (logMsg.empty()) {
+        sendEnd();
+        return;
+    }
+
+    send(logMsg);
+}
+
+SString<64> LogSession::popReport()
+{
+    if (mCurrentLogIndex >= mLogs.size() - 1) {
+        mCurrentLogIndex = -1;
+    }
+
     if (mCurrentLogIndex == -1) {
         SString<128> str = Logger::pop();
         if (str.empty()) {
-            {};
+            return {};
         }
 
         SString<256> escapedString = escapeString(str);
         mLogs = splitString(escapedString);
         mCurrentLogIndex = 0;
-    }
-
-    if (mCurrentLogIndex >= mLogs.size() - 1) {
-        return {};
     }
 
     const SString<48> &token = mLogs[mCurrentLogIndex];
@@ -32,9 +54,16 @@ SString<64> LogDump::popReport()
     return createLogUnit(token, end);
 }
 
-bool LogDump::empty() { return Logger::empty() && mCurrentLogIndex == -1; }
+bool LogSession::empty() { return Logger::empty() && mCurrentLogIndex == -1; }
 
-SString<64> LogDump::createLogUnit(const SString<48> &str, bool end) const
+void LogSession::sendEnd()
+{
+    JsonObject j;
+    j.add("id", LogEnd);
+    send(j.dump());
+}
+
+SString<64> LogSession::createLogUnit(const SString<48> &str, bool end) const
 {
     JsonObject j;
 
@@ -43,7 +72,7 @@ SString<64> LogDump::createLogUnit(const SString<48> &str, bool end) const
     return j.dump();
 }
 
-std::array<SString<48>, 6> LogDump::splitString(const SString<256> &str) const
+std::array<SString<48>, 6> LogSession::splitString(const SString<256> &str) const
 {
     const size_t tokenCapacity = 48;
     size_t strSize = str.size();
@@ -65,7 +94,7 @@ std::array<SString<48>, 6> LogDump::splitString(const SString<256> &str) const
     return strings;
 }
 
-SString<256> LogDump::escapeString(const SString<128> &str) const
+SString<256> LogSession::escapeString(const SString<128> &str) const
 {
     SString<256> escString;
 

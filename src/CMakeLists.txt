@@ -1,7 +1,6 @@
 target_sources(${PROJECT_NAME} PRIVATE
     main.cpp
     MonitorCommand.h
-    LogDump.h LogDump.cpp
     Uart.h Uart.cpp
 
     Clock/DateTime.h Clock/DateTime.cpp
@@ -19,6 +18,8 @@ target_sources(${PROJECT_NAME} PRIVATE
     Usb/UsbDeviceDescriptor.h Usb/UsbDeviceDescriptor.cpp
     Usb/UsbDevice.h Usb/UsbDevice.cpp
 )
+
+add_subdirectory(PanelClient)
 
 target_include_directories( ${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}

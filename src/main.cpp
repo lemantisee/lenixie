@@ -6,11 +6,9 @@
 #include "Logger.h"
 #include "SString.h"
 #include "WifiCredentials.h"
-#include "UsbDevice.h"
 #include "JsonObject.h"
-#include "MonitorCommand.h"
-#include "LogDump.h"
 #include "Uart.h"
+#include "PanelClient.h"
 
 namespace {
 const uint32_t F_CPU = 72000000;
@@ -22,8 +20,7 @@ uint16_t sysTicks = 0;
 DynamicIndication Indication;
 RTClock Clock;
 ESP8266 wifi;
-UsbDevice usbHost;
-LogDump logDumper;
+PanelClient panelClient;
 Uart uart;
 
 enum Command {
@@ -80,44 +77,6 @@ bool systemClockInit()
     HAL_SYSTICK_Config(F_CPU / 20000 - 1);
 
     return true;
-}
-
-void dumpLogs()
-{
-    LogDump dumper;
-
-    while (!dumper.empty()) {
-        SString<64> msg = dumper.popReport();
-        if (msg.empty()) {
-            break;
-        }
-        usbHost.sendData(msg);
-
-        SString<64> report;
-        while (report.empty()) {
-            report = usbHost.popData();
-        }
-
-        if (JsonObject(report).getInt("id", UnknownCommand) != GetLog) {
-            break;
-        }
-    }
-
-    JsonObject j;
-    j.add("id", LogEnd);
-    usbHost.sendData(j.dump());
-}
-
-void processUsbCmd(const SString<64> &buffer)
-{
-    JsonObject inMessage(buffer);
-
-    MonitorCommandId id = MonitorCommandId(inMessage.getInt("id", UnknownCommand));
-
-    switch (id) {
-    case GetLog: dumpLogs(); break;
-    default: break;
-    }
 }
 
 void initWifi(ESP8266 &esp)
@@ -189,9 +148,7 @@ int main(void)
 
     LOG("Started");
 
-    if (!usbHost.init()) {
-        return 1;
-    }
+    panelClient.init();
 
     Indication.setDecoderPins(GPIOB, GPIO_PIN_6, GPIO_PIN_8, GPIO_PIN_9, GPIO_PIN_7);
     Indication.setSign(DynamicIndication::MSBHourTube, GPIOA, GPIO_PIN_6);
@@ -206,11 +163,7 @@ int main(void)
     Clock.init(&wifi);
 
     for (;;) {
-        const SString<64> inBuffer = usbHost.popData();
-        if (!inBuffer.empty()) {
-            processUsbCmd(inBuffer);
-        }
-
+        panelClient.process();
         Clock.process();
         wifi.process();
     }
