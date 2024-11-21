@@ -7,9 +7,11 @@ set(CMAKE_CXX_STANDARD 20)
 enable_testing()
 
 add_subdirectory(Libs)
-add_subdirectory(Tests)
 
 if(${BUILD_STM32})
     message("Building firmware")
     add_subdirectory(Firmware)
+else()
+    message("Building tests")
+    add_subdirectory(Tests)
 endif(${BUILD_STM32})
