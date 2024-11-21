@@ -82,6 +82,8 @@ public:
 
     void operator+=(const char *str) { append(str); }
 
+    bool operator==(const char *str) { return std::strcmp(str, c_str()) == 0; }
+
     SString &append(char c)
     {
         if (mCurrentByte < capacity() - 1) {
@@ -106,7 +108,7 @@ public:
         return *this;
     }
 
-    bool append(uint16_t c)
+    SString &append(uint16_t c)
     {
         const uint8_t low8bits = c & 0xFF;
         if (c < 255) {
@@ -115,23 +117,23 @@ public:
 
         const uint8_t high8bits = (c >> 8) & 0xFF;
         return append(char(low8bits)) && append(char(high8bits));
-        return append(char(high8bits)) && append(char(low8bits));
+        // return append(char(high8bits)) && append(char(low8bits));
     }
 
-    bool append(const char *data, uint32_t size)
+    SString &append(const char *data, uint32_t size)
     {
         if (mCurrentByte + size >= capacity() - 1) {
-            return false;
+            return *this;
         }
 
         for (uint32_t i = 0; i < size; ++i) {
             append(char(data[i]));
         }
 
-        return true;
+        return *this;
     }
 
-    bool append(const uint8_t *data, uint32_t size)
+    SString &append(const uint8_t *data, uint32_t size)
     {
         return append(reinterpret_cast<const char *>(data), size);
     }
@@ -192,7 +194,7 @@ public:
 
         const char *mBufferStr = mBuffer.data() + fromPos;
         if (const char *ptr = strstr(mBufferStr, substr)) {
-            return uint32_t(ptr - mBufferStr);
+            return uint32_t(ptr - mBuffer.data());
         }
 
         return std::nullopt;

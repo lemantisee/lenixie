@@ -2,7 +2,7 @@
     "version": 2,
     "configurePresets": [
         {
-            "name": "default",
+            "name": "default-stm32",
             "hidden": true,
             "generator": "Ninja",
             "binaryDir": "${sourceDir}/build/${presetName}/build",
@@ -11,7 +11,8 @@
                 "CMAKE_TOOLCHAIN_FILE": {
                     "type": "FILEPATH",
                     "value": "${sourceDir}/cmake/gcc-arm-none-eabi.cmake"
-                }
+                },
+                "BUILD_STM32": true
             },
             "architecture": {
                 "value": "unspecified",
@@ -24,30 +25,73 @@
             }
         },
         {
-            "name": "debug",
-            "inherits": "default",
+            "name": "default-x64",
+            "hidden": true,
+            "description": "Using compilers for Visual Studio 17 2022 (x64 architecture)",
+            "generator": "Visual Studio 17 2022",
+            "toolset": "host=x64",
+            "architecture": "x64",
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "cacheVariables": {
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/out/install/${presetName}",
+                "CMAKE_C_COMPILER": "cl.exe",
+                "CMAKE_CXX_COMPILER": "cl.exe",
+                "BUILD_STM32": false
+            }
+        },
+        {
+            "name": "debug-stm32",
+            "inherits": "default-stm32",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
                 "PRESET_NAME": "debug"
             }
         },
         {
-            "name": "release",
-            "inherits": "default",
+            "name": "release-stm32",
+            "inherits": "default-stm32",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
                 "PRESET_NAME": "release"
             }
+        },
+        {
+            "name": "x64-debug",
+            "inherits": "default-x64"
+        },
+        {
+            "name": "x64-release",
+            "inherits": "default-x64"
         }
     ],
     "buildPresets": [
         {
-            "name": "debug",
-            "configurePreset": "debug"
+            "name": "stm32-debug",
+            "configurePreset": "debug-stm32"
         },
         {
-            "name": "release",
-            "configurePreset": "release"
+            "name": "stm32-release",
+            "configurePreset": "release-stm32"
+        },
+        {
+            "name": "x64-debug",
+            "displayName": "x64 - Debug",
+            "configurePreset": "x64-debug",
+            "configuration": "Debug"
+        },
+        {
+            "name": "x64-release",
+            "displayName": "x64 - Release",
+            "configurePreset": "x64-release",
+            "configuration": "Release"
+        }
+    ],
+    "testPresets": [
+        {
+            "name": "x64-test-release",
+            "description": "",
+            "displayName": "",
+            "configurePreset": "x64-release"
         }
     ]
 }
