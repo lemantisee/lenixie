@@ -7,7 +7,7 @@
 class PanelMessage
 {
 public:
-    MonitorCommandId cmd = UnknownCommand;
+    PanelCommandId cmd = UnknownCommand;
     SString<64> data;
 
     static PanelMessage fromReport(const SString<64> &report)
@@ -15,7 +15,7 @@ public:
         JsonObject inMessage(report);
 
         PanelMessage msg;
-        msg.cmd = MonitorCommandId(inMessage.getInt("id", UnknownCommand));
+        msg.cmd = PanelCommandId(inMessage.getInt("id", UnknownCommand));
         msg.data = inMessage.get("d");
 
         return msg;

@@ -1,8 +1,9 @@
 #pragma once
 
-enum MonitorCommandId {
+enum PanelCommandId {
     UnknownCommand = 0,
-    EchoCommand = 1,
+    GetDateTime = 1,
+    DateTimeState = 2,
     GetLog = 3,
     LogUnit = 4,
     LogUnitEnd = 5,

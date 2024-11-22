@@ -1,5 +1,6 @@
 target_sources(${PROJECT_NAME} PRIVATE
     MessageSession.h
+    DateTimeSession.h DateTimeSession.cpp
     LogSession.h LogSession.cpp
 
     PanelClient.h PanelClient.cpp

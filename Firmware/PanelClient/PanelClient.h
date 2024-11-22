@@ -3,16 +3,20 @@
 #include "UsbDevice.h"
 
 #include "LogSession.h"
+#include "DateTimeSession.h"
+
+class RTClock;
 
 class PanelClient
 {
 public:
     PanelClient();
     
-    bool init();
+    bool init(const RTClock *clock);
     void process();
 
 private:
     UsbDevice mUsb;
     LogSession mLog;
+    DateTimeSession mDateTime;
 };

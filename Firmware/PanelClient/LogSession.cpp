@@ -5,11 +5,8 @@
 void LogSession::handle(const PanelMessage &msg)
 {
     if (msg.cmd != GetLog) {
-        MessageSession *next = getNext();
-        if (MessageSession *next = getNext()) {
-            next->handle(msg);
-            return;
-        }
+        toNext(msg);
+        return;
     }
 
     if (empty()) {

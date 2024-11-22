@@ -62,41 +62,8 @@ bool RTClock::setTime(uint8_t hours, uint8_t minutes, uint8_t seconds)
     return setRtcTime(hours, minutes, seconds);
 }
 
-const DateTime &RTClock::getTime()
+const DateTime &RTClock::getTime() const
 {
-    if (!mInited) {
-        return mTime;
-    }
-
-    RTC_DateTypeDef date = {0};
-    if (HAL_RTC_GetDate(&mHandle, &date, RTC_FORMAT_BIN) != HAL_OK) {
-        LOG("Unable to get date from rtc");
-        return mTime;
-    }
-
-    if (date.WeekDay == 0) {
-        date.WeekDay = 7;
-    }
-
-    RTC_TimeTypeDef time = {0};
-    if (HAL_RTC_GetTime(&mHandle, &time, RTC_FORMAT_BIN) != HAL_OK) {
-        LOG("Unable to get time from rtc");
-        return mTime;
-    }
-
-    mTime.year = date.Year + 2000;
-    mTime.month = date.Month - 1;
-    mTime.monthDay = date.Date;
-    mTime.hours = time.Hours;
-    mTime.minutes = time.Minutes;
-    mTime.seconds = time.Seconds;
-
-    if (logRtcTimeAfterSync) {
-        logRtcTimeAfterSync = false;
-        LOG("Time: %02i:%02i:%02i", mTime.hours, mTime.minutes, mTime.seconds);
-        LOG("Date: %i-%02i-%02i(%i)", mTime.year, mTime.month, mTime.monthDay, date.WeekDay);
-    }
-
     return mTime;
 }
 
@@ -149,6 +116,7 @@ void RTClock::interrupt()
     }
 
     __HAL_RTC_ALARM_CLEAR_FLAG(&mHandle, RTC_FLAG_SEC);
+    updateTime();
 }
 
 bool RTClock::setRtcTime(uint8_t hours, uint8_t minutes, uint8_t seconds)
@@ -170,6 +138,38 @@ bool RTClock::setRtcDate(uint32_t year, uint8_t month, uint8_t mday, uint8_t wda
     data.Date = mday;
     data.Year = year - 2000;
     return HAL_RTC_SetDate(&mHandle, &data, RTC_FORMAT_BIN) == HAL_OK;
+}
+
+void RTClock::updateTime()
+{
+    RTC_DateTypeDef date = {0};
+    if (HAL_RTC_GetDate(&mHandle, &date, RTC_FORMAT_BIN) != HAL_OK) {
+        LOG("Unable to get date from rtc");
+        return;
+    }
+
+    if (date.WeekDay == 0) {
+        date.WeekDay = 7;
+    }
+
+    RTC_TimeTypeDef time = {0};
+    if (HAL_RTC_GetTime(&mHandle, &time, RTC_FORMAT_BIN) != HAL_OK) {
+        LOG("Unable to get time from rtc");
+        return;
+    }
+
+    mTime.year = date.Year + 2000;
+    mTime.month = date.Month - 1;
+    mTime.monthDay = date.Date;
+    mTime.hours = time.Hours;
+    mTime.minutes = time.Minutes;
+    mTime.seconds = time.Seconds;
+
+    if (logRtcTimeAfterSync) {
+        logRtcTimeAfterSync = false;
+        LOG("Time: %02i:%02i:%02i", mTime.hours, mTime.minutes, mTime.seconds);
+        LOG("Date: %i-%02i-%02i(%i)", mTime.year, mTime.month, mTime.monthDay, date.WeekDay);
+    }
 }
 
 void RTClock::setTimeZone(uint8_t timezone) { mTimezone = timezone; }

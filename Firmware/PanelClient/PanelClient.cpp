@@ -3,9 +3,17 @@
 PanelClient::PanelClient() 
 {
     mLog.setClient(&mUsb);
+    mDateTime.setClient(&mUsb);
+
+    mLog.setNext(&mDateTime);
 }
 
-bool PanelClient::init() { return mUsb.init(); }
+bool PanelClient::init(const RTClock *clock) 
+{
+    mDateTime.setRtc(clock);
+    
+    return mUsb.init(); 
+}
 
 void PanelClient::process()
 {

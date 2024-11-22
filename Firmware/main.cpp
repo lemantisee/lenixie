@@ -131,6 +131,7 @@ void SysTick_Handler()
 void RTC_IRQHandler()
 {
     Clock.interrupt();
+    
     const DateTime &time = Clock.getTime();
     if (!time.isNull()) {
         Indication.setNumber(time.hours / 10, time.hours % 10, time.minutes / 10,
@@ -148,7 +149,7 @@ int main(void)
 
     LOG("Started");
 
-    panelClient.init();
+    panelClient.init(&Clock);
 
     Indication.setDecoderPins(GPIOB, GPIO_PIN_6, GPIO_PIN_8, GPIO_PIN_9, GPIO_PIN_7);
     Indication.setSign(DynamicIndication::MSBHourTube, GPIOA, GPIO_PIN_6);

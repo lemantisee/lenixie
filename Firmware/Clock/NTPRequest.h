@@ -3,8 +3,6 @@
 #include <cstdint>
 #include <optional>
 
-#include "DateTime.h"
-
 class ESP8266;
 
 class NTPRequest
