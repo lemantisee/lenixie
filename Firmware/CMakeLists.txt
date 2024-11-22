@@ -1,6 +1,5 @@
 add_executable(${PROJECT_NAME}
     main.cpp
-    MonitorCommand.h
     Uart.h Uart.cpp
 
     Clock/DateTime.h Clock/DateTime.cpp
