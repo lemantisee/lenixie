@@ -11,9 +11,12 @@ public:
     DateTimeSession() = default;
 
     void handle(const PanelMessage &msg) override;
-    void setRtc(const RTClock *clock);
+    void setRtc(RTClock *clock);
 
 private:
+    void onGetDateTime();
+    void onSetDateTime(const SString<64> &data);
+
     SString<64> createReport(const DateTime &dateTime) const;
-    const RTClock *mClock = nullptr;
+    RTClock *mClock = nullptr;
 };

@@ -13,6 +13,7 @@ class RTClock
 public:
     RTClock() = default;
     void init(ESP8266 *wifi);
+    bool setTime(const DateTime &dateTime);
     bool setTime(uint8_t hours, uint8_t minutes, uint8_t seconds);
     void setTimeZone(uint8_t timezone);
     const DateTime &getTime() const;

@@ -52,17 +52,27 @@ TEST_CASE("SString: append")
     REQUIRE(str.append("World") == "HelloWorld");
     REQUIRE(str.append("World!s", 5) == "HelloWorldWorld");
     REQUIRE(str.append('c') == "HelloWorldWorldc");
-    REQUIRE(str.appendNumber(12) == "HelloWorldWorldc12");
 
     str += "ab";
-    REQUIRE(str == "HelloWorldWorldc12ab");
+    REQUIRE(str == "HelloWorldWorldcab");
 
     str += 'c';
-    REQUIRE(str == "HelloWorldWorldc12abc");
+    REQUIRE(str == "HelloWorldWorldcabc");
 
     SString<128> str2 = " abc";
     SString<128> newstr = str + str2;
-    REQUIRE(newstr == "HelloWorldWorldc12abc abc");
+    REQUIRE(newstr == "HelloWorldWorldcabc abc");
+
+    SString<4> str3 = "abcd";
+    REQUIRE(str3 == "abcd");
+}
+
+TEST_CASE("SString: append number")
+{
+    SString<128> str = "Hello";
+    REQUIRE(str.appendNumber(12) == "Hello12");
+    REQUIRE(str.appendNumber(34, "%i") == "Hello1234");
+    REQUIRE(str.appendNumber(5, "%02i") == "Hello123405");
 }
 
 TEST_CASE("SString: operator[]")
@@ -85,4 +95,13 @@ TEST_CASE("SString: back/pop")
     str.pop();
     REQUIRE(str.back() == 'l');
     REQUIRE(str.size() == 4);
+}
+
+TEST_CASE("SString to int")
+{
+    SString<4> str1 = "2024";
+    REQUIRE(str1.toInt() == 2024);
+
+    SString<4> str2 = "024";
+    REQUIRE(str2.toInt() == 24);
 }

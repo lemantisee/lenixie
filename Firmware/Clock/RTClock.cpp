@@ -49,6 +49,25 @@ void RTClock::init(ESP8266 *wifi)
     syncTime(ntpServer);
 }
 
+bool RTClock::setTime(const DateTime &dateTime)
+{
+    if (!mInited) {
+        return false;
+    }
+
+    if (!setRtcTime(dateTime.hours, dateTime.minutes, dateTime.seconds)) {
+        LOG("Uanble to set time");
+        return false;
+    }
+
+    if (!setRtcDate(dateTime.year, dateTime.month, dateTime.monthDay, dateTime.weekDay)) {
+        LOG("Uanble to set date");
+        return false;
+    }
+
+    return true;
+}
+
 bool RTClock::setTime(uint8_t hours, uint8_t minutes, uint8_t seconds)
 {
     if (!mInited) {

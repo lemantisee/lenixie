@@ -8,4 +8,5 @@ enum PanelCommandId {
     LogUnit = 4,
     LogUnitEnd = 5,
     LogEnd = 6,
+    SetDateTime = 7,
 };

@@ -12,7 +12,7 @@ class PanelClient
 public:
     PanelClient();
     
-    bool init(const RTClock *clock);
+    bool init(RTClock *clock);
     void process();
 
 private:

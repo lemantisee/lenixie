@@ -8,7 +8,7 @@ PanelClient::PanelClient()
     mLog.setNext(&mDateTime);
 }
 
-bool PanelClient::init(const RTClock *clock) 
+bool PanelClient::init(RTClock *clock) 
 {
     mDateTime.setRtc(clock);
     

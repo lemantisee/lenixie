@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <optional>
 #include <cstdint>
+#include <cstdlib>
 
 template<uint32_t N>
 class SString
@@ -86,7 +87,7 @@ public:
 
     SString &append(char c)
     {
-        if (mCurrentByte < capacity() - 1) {
+        if (mCurrentByte <= capacity() - 1) {
             mBuffer[mCurrentByte] = c;
             ++mCurrentByte;
         }
@@ -97,7 +98,7 @@ public:
     SString &append(const char *str)
     {
         const uint32_t size = strlen(str);
-        if (mCurrentByte + size >= capacity() - 1) {
+        if (mCurrentByte + size - 1 > capacity() - 1) {
             return *this;
         }
 
@@ -140,9 +141,14 @@ public:
 
     SString &appendNumber(int value)
     {
-        int size = std::snprintf(nullptr, 0, "%i", value) + 1; // Extra space for '\0'
+        return appendNumber(value, "%i");
+    }
+
+    SString &appendNumber(int value, const char *format)
+    {
+        int size = std::snprintf(nullptr, 0, format, value) + 1; // Extra space for '\0'
         if (size > 0 || size + mCurrentByte < capacity()) {
-            snprintf(mBuffer.data() + mCurrentByte, size, "%i", value);
+            snprintf(mBuffer.data() + mCurrentByte, size, format, value);
             mCurrentByte += size - 1;
         }
 
@@ -199,6 +205,8 @@ public:
 
         return std::nullopt;
     }
+
+    int toInt() const { return std::atoi(mBuffer.data()); }
 
     Buffer::const_iterator begin() const { return mBuffer.cbegin(); }
     Buffer::const_iterator end() const { return mBuffer.cend(); }
