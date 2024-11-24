@@ -15,8 +15,8 @@ public:
 
 private:
     void onGetDateTime();
-    void onSetDateTime(const SString<64> &data);
+    void onSetDateTime(const SString<256> &data);
 
-    SString<64> createReport(const DateTime &dateTime) const;
+    SString<256> createReport(const DateTime &dateTime) const;
     RTClock *mClock = nullptr;
 };

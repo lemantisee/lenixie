@@ -8,11 +8,11 @@ class PanelMessage
 {
 public:
     PanelCommandId cmd = UnknownCommand;
-    SString<64> data;
+    SString<256> data;
 
-    static PanelMessage fromReport(const SString<64> &report)
+    static PanelMessage fromReport(const SString<256> &report)
     {
-        JsonObject inMessage(report);
+        JsonObject inMessage(report.c_str());
 
         PanelMessage msg;
         msg.cmd = PanelCommandId(inMessage.getInt("id", UnknownCommand));

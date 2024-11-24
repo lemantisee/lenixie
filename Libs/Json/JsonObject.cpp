@@ -4,10 +4,10 @@
 
 JsonObject::JsonObject() { mBuffer.append('{'); }
 
-JsonObject::JsonObject(SString<64> string) : mBuffer(std::move(string))
+JsonObject::JsonObject(const char *jsonStr) 
 {
     lwjson_init(&mLwJson, mLwTokens, 4);
-    mInParsed = lwjson_parse(&mLwJson, mBuffer.data()) == lwjsonOK;
+    mInParsed = lwjson_parse(&mLwJson, jsonStr) == lwjsonOK;
 }
 
 void JsonObject::add(const char *key, int value)
@@ -38,7 +38,7 @@ void JsonObject::add(const char *key, const char *value)
     addString(value);
 }
 
-SString<64> &JsonObject::dump()
+SString<256> &JsonObject::dump()
 {
     if (mBuffer.size() >= mBuffer.capacity()) {
         return mBuffer;
@@ -68,7 +68,7 @@ bool JsonObject::getBool(const char *key, bool defaultValue)
     return getInt(key, defaultValue ? 0 : 1);
 }
 
-SString<64> JsonObject::get(const char *key)
+SString<256> JsonObject::get(const char *key)
 {
     if (!mInParsed) {
         return {};
@@ -79,7 +79,7 @@ SString<64> JsonObject::get(const char *key)
         return {};
     }
 
-    return SString<64>(token->u.str.token_value, token->u.str.token_value_len);
+    return SString<256>(token->u.str.token_value, token->u.str.token_value_len);
 }
 
 void JsonObject::addString(const char *value)

@@ -9,86 +9,32 @@ void LogSession::handle(const PanelMessage &msg)
         return;
     }
 
-    if (empty()) {
+    if (Logger::empty()) {
         sendEnd();
         return;
     }
 
-    SString<64> logMsg = popReport();
-    if (logMsg.empty()) {
+    SString<128> log = Logger::pop();
+    if (log.empty()) {
         sendEnd();
         return;
     }
 
-    send(logMsg);
+    SString<256> escapedString = escapeString(log);
+
+    JsonObject j;
+
+    j.add("id", LogUnit);
+    j.add("d", escapedString.c_str());
+
+    send(j.dump());
 }
-
-SString<64> LogSession::popReport()
-{
-    if (mCurrentLogIndex >= mLogs.size() - 1) {
-        mCurrentLogIndex = -1;
-    }
-
-    if (mCurrentLogIndex == -1) {
-        SString<128> str = Logger::pop();
-        if (str.empty()) {
-            return {};
-        }
-
-        SString<256> escapedString = escapeString(str);
-        mLogs = splitString(escapedString);
-        mCurrentLogIndex = 0;
-    }
-
-    const SString<48> &token = mLogs[mCurrentLogIndex];
-    ++mCurrentLogIndex;
-
-    if (token.empty()) {
-        return {};
-    }
-
-    const bool end = token.size() < token.capacity();
-    return createLogUnit(token, end);
-}
-
-bool LogSession::empty() { return Logger::empty() && mCurrentLogIndex == -1; }
 
 void LogSession::sendEnd()
 {
     JsonObject j;
     j.add("id", LogEnd);
     send(j.dump());
-}
-
-SString<64> LogSession::createLogUnit(const SString<48> &str, bool end) const
-{
-    JsonObject j;
-
-    j.add("id", end ? LogUnitEnd : LogUnit);
-    j.add("d", str.c_str());
-    return j.dump();
-}
-
-std::array<SString<48>, 6> LogSession::splitString(const SString<256> &str) const
-{
-    const size_t tokenCapacity = 48;
-    size_t strSize = str.size();
-    std::array<SString<48>, 6> strings;
-
-    const char *ptr = str.c_str();
-    for (SString<48> &token : strings) {
-        if (strSize == 0) {
-            break;
-        }
-
-        const size_t sizeToCopy = std::min(strSize, tokenCapacity);
-
-        token = SString<48>(ptr, sizeToCopy);
-        strSize -= sizeToCopy;
-        ptr += sizeToCopy;
-    }
-
-    return strings;
 }
 
 SString<256> LogSession::escapeString(const SString<128> &str) const

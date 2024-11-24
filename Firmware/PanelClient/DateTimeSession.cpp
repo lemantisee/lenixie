@@ -21,7 +21,7 @@ void DateTimeSession::setRtc(RTClock *clock)
 void DateTimeSession::onGetDateTime()
 {
     const DateTime &dateTime = mClock->getTime();
-    const SString<64> report = createReport(dateTime);
+    const SString<256> report = createReport(dateTime);
 
     if (report.empty()) {
         LOG("Invalid time report");
@@ -31,7 +31,7 @@ void DateTimeSession::onGetDateTime()
     send(report);
 }
 
-void DateTimeSession::onSetDateTime(const SString<64> &data)
+void DateTimeSession::onSetDateTime(const SString<256> &data)
 {
     DateTime dateTime;
 
@@ -47,7 +47,7 @@ void DateTimeSession::onSetDateTime(const SString<64> &data)
     mClock->setTime(dateTime);
 }
 
-SString<64> DateTimeSession::createReport(const DateTime &dateTime) const
+SString<256> DateTimeSession::createReport(const DateTime &dateTime) const
 { 
     SString<20> dateTimeStr;
     dateTimeStr.appendNumber(dateTime.year);

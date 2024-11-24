@@ -65,6 +65,10 @@ TEST_CASE("SString: append")
 
     SString<4> str3 = "abcd";
     REQUIRE(str3 == "abcd");
+
+    SString<4> str4;
+    str4.append("abcde", 4);
+    REQUIRE(str4 == "abcd");
 }
 
 TEST_CASE("SString: append number")

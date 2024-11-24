@@ -12,7 +12,7 @@ public:
     void setClient(UsbDevice *usb) { mUsb = usb; }
 
 protected:
-    void send(const SString<64> &report) { mUsb->sendData(report); }
+    void send(const SString<256> &report) { mUsb->sendData(report); }
     void toNext(const PanelMessage &msg)
     {
         if (mNext) {

@@ -2,6 +2,7 @@ project(Tests)
 
 add_executable(${PROJECT_NAME}
     main.cpp
+    test_DataPacket.cpp
     test_SString.cpp
 )
 

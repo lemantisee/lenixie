@@ -17,7 +17,9 @@ bool PanelClient::init(RTClock *clock)
 
 void PanelClient::process()
 {
-    const SString<64> inBuffer = mUsb.popData();
+    mUsb.process();
+    
+    const SString<256> inBuffer = mUsb.popData();
     if (inBuffer.empty()) {
         return;
     }

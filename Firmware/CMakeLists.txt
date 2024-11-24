@@ -12,7 +12,6 @@ add_executable(${PROJECT_NAME}
     Indicator/BCDDecoder.h Indicator/BCDDecoder.cpp
     Indicator/DynamicIndication.h Indicator/DynamicIndication.cpp
 
-    Usb/CustomHid.h Usb/CustomHid.cpp
     Usb/UsbDriverF103.h Usb/UsbDriverF103.cpp
     Usb/UsbDeviceDescriptor.h Usb/UsbDeviceDescriptor.cpp
     Usb/UsbDevice.h Usb/UsbDevice.cpp
@@ -38,6 +37,7 @@ target_link_libraries( ${PROJECT_NAME} PRIVATE
     Logger
     Json
     SString
+    DataPacket
 )
 
 target_compile_definitions( ${PROJECT_NAME} PRIVATE

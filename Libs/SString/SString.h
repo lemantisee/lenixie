@@ -83,7 +83,7 @@ public:
 
     void operator+=(const char *str) { append(str); }
 
-    bool operator==(const char *str) { return std::strcmp(str, c_str()) == 0; }
+    bool operator==(const char *str) const { return std::strcmp(str, c_str()) == 0; }
 
     SString &append(char c)
     {
@@ -123,7 +123,7 @@ public:
 
     SString &append(const char *data, uint32_t size)
     {
-        if (mCurrentByte + size >= capacity() - 1) {
+        if (mCurrentByte + size - 1 > capacity() - 1) {
             return *this;
         }
 
