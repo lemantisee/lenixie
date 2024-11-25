@@ -704,7 +704,7 @@ lwjson_free(lwjson_t* lwobj) {
  * \return          Pointer to found token on success, `NULL` if token cannot be found
  */
 const lwjson_token_t*
-lwjson_find(lwjson_t* lwobj, const char* path) {
+lwjson_find(const lwjson_t* lwobj, const char* path) {
     if (lwobj == NULL || !lwobj->flags.parsed || path == NULL) {
         return NULL;
     }

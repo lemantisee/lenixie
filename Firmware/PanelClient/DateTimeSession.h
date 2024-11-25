@@ -15,7 +15,7 @@ public:
 
 private:
     void onGetDateTime();
-    void onSetDateTime(const SString<256> &data);
+    void onSetDateTime(const PanelMessage &msg);
 
     SString<256> createReport(const DateTime &dateTime) const;
     RTClock *mClock = nullptr;

@@ -7,17 +7,18 @@
 class PanelMessage
 {
 public:
-    PanelCommandId cmd = UnknownCommand;
-    SString<256> data;
-
     static PanelMessage fromReport(const SString<256> &report)
     {
-        JsonObject inMessage(report.c_str());
-
         PanelMessage msg;
-        msg.cmd = PanelCommandId(inMessage.getInt("id", UnknownCommand));
-        msg.data = inMessage.get("d");
-
+        msg.mJson = JsonObject(report.c_str());
         return msg;
     }
+
+    PanelCommandId getCmd() const { return PanelCommandId(mJson.getInt("id", UnknownCommand)); }
+    int getInt(const char *key, int defaultValue) const { return mJson.getInt(key, defaultValue); }
+    SString<256> getString(const char *key) const { return mJson.get(key); }
+
+private:
+    PanelCommandId mCmd = UnknownCommand;
+    JsonObject mJson;
 };

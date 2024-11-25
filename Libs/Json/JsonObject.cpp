@@ -6,7 +6,7 @@ JsonObject::JsonObject() { mBuffer.append('{'); }
 
 JsonObject::JsonObject(const char *jsonStr) 
 {
-    lwjson_init(&mLwJson, mLwTokens, 4);
+    lwjson_init(&mLwJson, mLwTokens, 8);
     mInParsed = lwjson_parse(&mLwJson, jsonStr) == lwjsonOK;
 }
 
@@ -49,7 +49,7 @@ SString<256> &JsonObject::dump()
     return mBuffer;
 }
 
-int JsonObject::getInt(const char *key, int defaultValue)
+int JsonObject::getInt(const char *key, int defaultValue) const
 {
     if (!mInParsed) {
         return defaultValue;
@@ -63,12 +63,12 @@ int JsonObject::getInt(const char *key, int defaultValue)
     return token->u.num_int;
 }
 
-bool JsonObject::getBool(const char *key, bool defaultValue)
+bool JsonObject::getBool(const char *key, bool defaultValue) const
 {
     return getInt(key, defaultValue ? 0 : 1);
 }
 
-SString<256> JsonObject::get(const char *key)
+SString<256> JsonObject::get(const char *key) const
 {
     if (!mInParsed) {
         return {};

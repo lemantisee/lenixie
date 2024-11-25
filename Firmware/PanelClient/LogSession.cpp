@@ -4,7 +4,7 @@
 
 void LogSession::handle(const PanelMessage &msg)
 {
-    if (msg.cmd != GetLog) {
+    if (msg.getCmd() != GetLog) {
         toNext(msg);
         return;
     }

@@ -135,7 +135,7 @@ typedef struct {
 lwjsonr_t lwjson_init(lwjson_t* lwobj, lwjson_token_t* tokens, size_t tokens_len);
 lwjsonr_t lwjson_parse_ex(lwjson_t* lwobj, const void* json_data, size_t len);
 lwjsonr_t lwjson_parse(lwjson_t* lwobj, const char* json_str);
-const lwjson_token_t* lwjson_find(lwjson_t* lwobj, const char* path);
+const lwjson_token_t* lwjson_find(const lwjson_t* lwobj, const char* path);
 const lwjson_token_t* lwjson_find_ex(lwjson_t* lwobj, const lwjson_token_t* token, const char* path);
 lwjsonr_t lwjson_free(lwjson_t* lwobj);
 
