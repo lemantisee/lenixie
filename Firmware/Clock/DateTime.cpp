@@ -31,7 +31,7 @@ DateTime DateTime::fromTimestamp(int64_t timestamp)
     return dateTime;
 }
 
-DateTime DateTime::localDatetime(int64_t utcTimestamp, uint8_t timezone)
+DateTime DateTime::localDatetime(int64_t utcTimestamp, int timezone)
 {
     int64_t localTimestamp = utcTimestamp + timezone * 60 * 60;
 

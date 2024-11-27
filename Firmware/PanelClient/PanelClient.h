@@ -5,6 +5,7 @@
 #include "LogSession.h"
 #include "DateTimeSession.h"
 #include "NetworkSession.h"
+#include "NtpSession.h"
 
 class RTClock;
 class ESP8266;
@@ -22,4 +23,5 @@ private:
     LogSession mLog;
     DateTimeSession mDateTime;
     NetworkSession mNetwork;
+    NtpSession mNtp;
 };

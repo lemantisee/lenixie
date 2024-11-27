@@ -4,7 +4,7 @@
 
 void LogSession::handle(const PanelMessage &msg)
 {
-    if (msg.getCmd() != GetLog) {
+    if (msg.getCmd() != PanelMessage::GetLog) {
         toNext(msg);
         return;
     }
@@ -24,7 +24,7 @@ void LogSession::handle(const PanelMessage &msg)
 
     JsonObject j;
 
-    j.add("id", LogUnit);
+    j.add("id", PanelMessage::LogUnit);
     j.add("d", escapedString.c_str());
 
     send(j.dump());
@@ -33,7 +33,7 @@ void LogSession::handle(const PanelMessage &msg)
 void LogSession::sendEnd()
 {
     JsonObject j;
-    j.add("id", LogEnd);
+    j.add("id", PanelMessage::LogEnd);
     send(j.dump());
 }
 

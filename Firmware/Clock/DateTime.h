@@ -16,7 +16,7 @@ public:
 
     bool isNull() const;
     static DateTime fromTimestamp(int64_t timestamp);
-    static DateTime localDatetime(int64_t utcTimestamp, uint8_t timezone);
+    static DateTime localDatetime(int64_t utcTimestamp, int timezone);
 
 private:
     static int8_t calculateDST(uint8_t month_, uint8_t monthday_, uint8_t weekday_, uint8_t hours_);

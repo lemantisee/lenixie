@@ -5,6 +5,7 @@
 
 #include "NTPRequest.h"
 #include "DateTime.h"
+#include "SString.h"
 
 class ESP8266;
 
@@ -15,13 +16,19 @@ public:
     void init(ESP8266 *wifi);
     bool setTime(const DateTime &dateTime);
     bool setTime(uint8_t hours, uint8_t minutes, uint8_t seconds);
-    void setTimeZone(uint8_t timezone);
+    void setTimeZone(int timezone);
+    void setNtpServer(const SString<128> &url);
+
     const DateTime &getTime() const;
+    int getTimeZone() const;
+    const SString<128> &getNtpServer() const;
+
     void process();
-    void syncTime(const char *ntpServer);
     void interrupt();
+    void syncNtp();
 
 private:
+    void syncTime(const char *ntpServer);
     bool setRtcTime(uint8_t hours, uint8_t minutes, uint8_t seconds);
     bool setRtcDate(uint32_t year, uint8_t month, uint8_t mday, uint8_t wday);
     void updateTime();
@@ -30,6 +37,7 @@ private:
     DateTime mTime;
     NTPRequest mNtp;
     uint32_t mLastNtpSyncTime = 0;
-    uint8_t mTimezone = 0;
+    int mTimezone = 0;
     bool mInited = false;
+    SString<128> mNtpUrl = "pool.ntp.org";
 };

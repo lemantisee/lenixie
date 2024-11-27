@@ -7,8 +7,8 @@
 void DateTimeSession::handle(const PanelMessage &msg)
 {
     switch (msg.getCmd()) {
-    case GetDateTime: onGetDateTime(); break;
-    case SetDateTime: onSetDateTime(msg); break;
+    case PanelMessage::GetDateTime: onGetDateTime(); break;
+    case PanelMessage::SetDateTime: onSetDateTime(msg); break;
     default: toNext(msg); break;
     }
 }
@@ -50,7 +50,7 @@ void DateTimeSession::onSetDateTime(const PanelMessage &msg)
 SString<256> DateTimeSession::createReport(const DateTime &dateTime) const
 { 
     JsonObject json;
-    json.add("id", DateTimeState);
+    json.add("id", PanelMessage::DateTimeState);
     json.add("y", dateTime.year);
     json.add("mn", dateTime.month);
     json.add("md", dateTime.monthDay);

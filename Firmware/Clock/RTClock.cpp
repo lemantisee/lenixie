@@ -7,7 +7,6 @@
 
 namespace {
 constexpr uint32_t ntpPeriodSync = 43200000; // 12 hours
-const char *ntpServer = "pool.ntp.org";
 void rtcInit(RTC_HandleTypeDef *hrtc)
 {
     if (hrtc->Instance == RTC) {
@@ -46,7 +45,7 @@ void RTClock::init(ESP8266 *wifi)
     mNtp.init(wifi);
     mInited = true;
 
-    syncTime(ntpServer);
+    syncTime(mNtpUrl.c_str());
 }
 
 bool RTClock::setTime(const DateTime &dateTime)
@@ -86,6 +85,13 @@ const DateTime &RTClock::getTime() const
     return mTime;
 }
 
+int RTClock::getTimeZone() const { return mTimezone; }
+
+const SString<128> &RTClock::getNtpServer() const
+{
+    return mNtpUrl;
+}
+
 void RTClock::process()
 {
     if (!mInited) {
@@ -94,7 +100,7 @@ void RTClock::process()
 
     if (mLastNtpSyncTime + ntpPeriodSync < HAL_GetTick()) {
         mLastNtpSyncTime = HAL_GetTick();
-        syncTime(ntpServer);
+        syncTime(mNtpUrl.c_str());
     }
 }
 
@@ -191,4 +197,14 @@ void RTClock::updateTime()
     }
 }
 
-void RTClock::setTimeZone(uint8_t timezone) { mTimezone = timezone; }
+void RTClock::setTimeZone(int timezone) { mTimezone = timezone; }
+
+void RTClock::setNtpServer(const SString<128> &url) 
+{
+    mNtpUrl = url;
+}
+
+void RTClock::syncNtp() 
+{
+    syncTime(mNtpUrl.c_str());
+}

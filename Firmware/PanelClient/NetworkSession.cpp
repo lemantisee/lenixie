@@ -6,8 +6,8 @@
 void NetworkSession::handle(const PanelMessage &msg)
 {
     switch (msg.getCmd()) {
-    case GetNetworkState: onState(); break;
-    case ConnectToWifi: onConnect(msg); break;
+    case PanelMessage::GetNetworkState: onState(); break;
+    case PanelMessage::ConnectToWifi: onConnect(msg); break;
     default: toNext(msg); break;
     }
 }
@@ -17,7 +17,7 @@ void NetworkSession::setWifi(ESP8266 *wifi) { mWifi = wifi; }
 void NetworkSession::onState()
 {
     JsonObject json;
-    json.add("id", NetworkState);
+    json.add("id", PanelMessage::NetworkState);
 
     const bool connected = mWifi->isConnected();
     json.add("s", connected ? 1 : 0);
