@@ -10,6 +10,7 @@
 
 namespace {
 constexpr uint32_t checkConnectionPeriodMs = 30 * 60 * 1000; // 30 min
+constexpr uint32_t obtainSSIDPeriodMs = 1000; // 30 min
 } // namespace
 
 bool ESP8266::init(Uart *uart)
@@ -18,14 +19,12 @@ bool ESP8266::init(Uart *uart)
     mUart->onReceive(
         [this](const SString<64> &data) { mBuffer.append(data.c_str(), data.size()); });
 
-    HAL_Delay(500);
-
-    // reset();
-
     if (!enableEcho(false)) {
         LOG("Unable to echo");
         return false;
     }
+
+    printVersion();
 
     if (!enableMultipleConnections(false)) {
         LOG("enableMultipleConnections fails");
@@ -37,6 +36,10 @@ bool ESP8266::init(Uart *uart)
         return false;
     }
 
+    // HAL_Delay(2000);
+
+    // obtainSSID();
+
     return true;
 }
 
@@ -46,22 +49,8 @@ void ESP8266::process()
         return;
     }
 
-    if (mLastConnectionCheck + checkConnectionPeriodMs > HAL_GetTick()) {
-        return;
-    }
-
-    mLastConnectionCheck = HAL_GetTick();
-
-    if (isConnected()) {
-        return;
-    }
-
-    if (!connectNetwork(mStationSSIDWasConnected.c_str(), mStationPswWasConnected.c_str())) {
-        LOG("Unable to connect to previuos wifi");
-        return;
-    }
-
-    LOG("Reconnected to previuos wifi");
+    checkConnection();
+    checkSSID();
 }
 
 void ESP8266::sendCommand(const char *cmd, bool sendEnd)
@@ -82,26 +71,26 @@ bool ESP8266::setMode(Mode mode)
         return true;
     }
 
-    mMode = mode;
-
-    EspAtCommand cmd("AT+CWMODE=");
-    cmd.add(mMode);
-
-    switch (mMode) {
-    case Station: break;
-    case SoftAP: break;
-    case StationAndSoftAP: break;
-    default: return false;
+    if (mode == Unknown) {
+        return false;
     }
 
+    EspAtCommand cmd("AT+CWMODE_DEF=");
+    cmd.add(mode);
+
     sendCommand(cmd);
-    return waitForAnswer("OK", 5000);
+    if (!waitForAnswer("OK", 5000)) {
+        return false;
+    }
+
+    mMode = mode;
+    return true;
 }
 
-bool ESP8266::waitForAnswer(const char *answer1, uint16_t timeout, const char *answer2)
+bool ESP8266::waitForAnswer(const char *answer1, uint32_t timeoutMs, const char *answer2)
 {
-    timeout += HAL_GetTick();
-    while ((HAL_GetTick() < timeout)) {
+    timeoutMs += HAL_GetTick();
+    while ((HAL_GetTick() < timeoutMs)) {
         bool checkAnswer = mBuffer.contains(answer1);
         if (answer2) {
             checkAnswer = checkAnswer || mBuffer.contains(answer2);
@@ -112,7 +101,7 @@ bool ESP8266::waitForAnswer(const char *answer1, uint16_t timeout, const char *a
         }
     }
 
-    LOG("waitForAnswer failed with buffer %s", mBuffer.c_str());
+    LOG("Answer failed with buffer %s", mBuffer.c_str());
     mBuffer.clear();
     return false;
 }
@@ -123,14 +112,14 @@ bool ESP8266::connectNetwork(const char *ssid, const char *password)
         return false;
     }
 
-    EspAtCommand cmd("AT+CWJAP_CUR=");
+    EspAtCommand cmd("AT+CWJAP_DEF=");
     cmd.add(ssid).add(password);
 
     sendCommand(cmd);
-    const bool ok = waitForAnswer("OK", 20000);
+    const bool ok = waitForAnswer("OK", 10000);
     if (ok) {
-        mStationSSIDWasConnected = ssid;
-        mStationPswWasConnected = password;
+        mConnectedSSID = ssid;
+        mConnectedPassword = password;
     }
 
     return ok;
@@ -144,6 +133,10 @@ bool ESP8266::test()
 
 bool ESP8266::connectToServerUDP(const char *host, uint16_t port)
 {
+    if (!isConnected()) {
+        return false;
+    }
+
     //AT+CIPSTART="TCP","192.168.0.65",333
     //"UDP", "0", 0, 1025, 2
     uint16_t localPort = 3210;
@@ -157,6 +150,10 @@ bool ESP8266::connectToServerUDP(const char *host, uint16_t port)
 
 bool ESP8266::sendUDPpacket(const char *msg, uint16_t size)
 {
+    if (!isConnected()) {
+        return false;
+    }
+
     EspAtCommand cmd("AT+CIPSEND=");
     cmd.add(size);
 
@@ -182,15 +179,15 @@ bool ESP8266::getData(uint8_t *buffer, uint8_t size)
     }
 
     HAL_Delay(1000);
-    if (mBuffer.capacity() < 48 + espHeaderSize) {
-        SString<20> str;
-        str.append("buffer capacity ").appendNumber(mBuffer.capacity());
-        LOG(str.c_str());
-        return false;
-    }
+    
     char *ptr = strstr((char *)mBuffer.data(), answer.c_str());
     std::memcpy(buffer, ptr + espHeaderSize, size);
     return true;
+}
+
+const SString<65> &ESP8266::getSsid() const
+{
+    return mConnectedSSID;
 }
 
 bool ESP8266::switchToAP()
@@ -247,12 +244,6 @@ bool ESP8266::SendString(const char *str, const char *ip, uint16_t port)
     return waitForAnswer("SEND OK", 2000);
 }
 
-uint8_t *ESP8266::getIncomeData()
-{
-    char *ptr = strchr((char *)mBuffer.data(), ':');
-    return ((uint8_t *)ptr + 1);
-}
-
 bool ESP8266::hasIncomeData() { return mBuffer.contains("+IPD"); }
 
 void ESP8266::closeCurrentConnection()
@@ -277,6 +268,86 @@ bool ESP8266::enableMultipleConnections(bool state)
     sendCommand(cmd);
 
     return waitForAnswer("OK", 2000);
+}
+
+void ESP8266::obtainSSID()
+{
+    if (!isConnected()) {
+        return;
+    }
+
+    uint8_t tries = 2;
+    while (tries > 0) {
+        --tries;
+
+        sendCommand("AT+CWJAP_DEF?", true);
+        if (!waitForAnswer("OK", 3000)) {
+            continue;
+        }
+        //answer: +CWJAP:<ssid>, <bssid>, <channel>, <rssi>
+        std::optional<uint32_t> posStartOpt = mBuffer.find(":");
+        std::optional<uint32_t> posEndOpt = mBuffer.find(",");
+
+        if (!posStartOpt || !posEndOpt) {
+            LOG("Error: %s", mBuffer.c_str());
+            break;
+        }
+
+        const size_t ssidSize = *posEndOpt - (*posStartOpt + 1);
+
+        mConnectedSSID = SString<65>(mBuffer.c_str() + *posStartOpt + 1, ssidSize);
+        mConnectedSSID.removeSymbol('\"');
+        if (!mConnectedSSID.empty()) {
+            break;
+        }
+    }
+}
+
+void ESP8266::printVersion() 
+{
+    EspAtCommand cmd("AT+GMR");
+    sendCommand(cmd);
+    waitForAnswer("OK", 1000);
+
+    LOG("%s", mBuffer.c_str());
+}
+
+void ESP8266::checkConnection() 
+{
+    if (mLastConnectionCheck + checkConnectionPeriodMs > HAL_GetTick()) {
+        return;
+    }
+
+    mLastConnectionCheck = HAL_GetTick();
+
+    if (isConnected()) {
+        return;
+    }
+
+    if (!connectNetwork(mConnectedSSID.c_str(), mConnectedPassword.c_str())) {
+        LOG("Unable to connect to previuos wifi");
+        return;
+    }
+
+    LOG("Reconnected to previuos wifi");
+}
+
+void ESP8266::checkSSID()
+{
+    if (!mConnectedSSID.empty()) {
+        mLastSSIDCheck = 0;
+        return;
+    }
+
+    if (mLastSSIDCheck + obtainSSIDPeriodMs > HAL_GetTick()) {
+        return;
+    }
+
+    mLastSSIDCheck = HAL_GetTick();
+
+    if (isConnected()) {
+        obtainSSID();
+    }
 }
 
 bool ESP8266::setAPip(const char *ip)
@@ -306,12 +377,14 @@ bool ESP8266::isConnected()
     const uint32_t timeout = 3000 + HAL_GetTick();
     const char *statusStr = "STATUS:";
     const uint32_t statusStrSize = std::strlen(statusStr);
+    const uint8_t statusSymbolSize = 1;
+
     std::optional<uint32_t> posOpt = 0;
 
     while ((HAL_GetTick() < timeout)) {
         posOpt = mBuffer.find(statusStr);
 
-        if (posOpt && mBuffer.size() > statusStrSize) {
+        if (posOpt && mBuffer.size() >= statusStrSize + statusSymbolSize) {
             break;
         }
     }
@@ -322,18 +395,17 @@ bool ESP8266::isConnected()
 
     const uint32_t pos = *posOpt + std::strlen(statusStr);
 
-    if (pos >= mBuffer.size()) {
-        return false;
+    SString<1> statusStateStr(&mBuffer[pos], statusSymbolSize);
+    ConnectionStatus status = ConnectionStatus(statusStateStr.toInt());
+
+    switch (status)
+    {
+    case GotIpStatus:
+    case ConnectedStatus:
+        return true;
+    default:
+        break;
     }
 
-    char statusChar = mBuffer[pos];
-
-    HAL_Delay(500);
-
-    bool connected = statusChar == '2' || statusChar == '3';
-    if (!connected) {
-        LOG(mBuffer.c_str());
-    }
-
-    return connected;
+    return false;
 }

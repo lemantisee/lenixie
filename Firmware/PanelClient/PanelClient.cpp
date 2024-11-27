@@ -4,13 +4,16 @@ PanelClient::PanelClient()
 {
     mLog.setClient(&mUsb);
     mDateTime.setClient(&mUsb);
+    mNetwork.setClient(&mUsb);
 
     mLog.setNext(&mDateTime);
+    mDateTime.setNext(&mNetwork);
 }
 
-bool PanelClient::init(RTClock *clock) 
+bool PanelClient::init(RTClock *clock, ESP8266 *wifi) 
 {
     mDateTime.setRtc(clock);
+    mNetwork.setWifi(wifi);
     
     return mUsb.init(); 
 }

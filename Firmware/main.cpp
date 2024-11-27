@@ -149,7 +149,7 @@ int main(void)
 
     LOG("Started");
 
-    panelClient.init(&Clock);
+    panelClient.init(&Clock, &wifi);
 
     Indication.setDecoderPins(GPIOB, GPIO_PIN_6, GPIO_PIN_8, GPIO_PIN_9, GPIO_PIN_7);
     Indication.setSign(DynamicIndication::MSBHourTube, GPIOA, GPIO_PIN_6);

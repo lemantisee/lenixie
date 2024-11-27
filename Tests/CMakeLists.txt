@@ -13,6 +13,7 @@ target_link_libraries( ${PROJECT_NAME} PRIVATE
     Json
     SString
     Catch2::Catch2
+    DataPacket
 )
 
 # include(CTest)

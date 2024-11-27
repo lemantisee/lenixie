@@ -109,3 +109,40 @@ TEST_CASE("SString to int")
     SString<4> str2 = "024";
     REQUIRE(str2.toInt() == 24);
 }
+
+TEST_CASE("SString: remove symbol")
+{
+    SString<5> str1 = "abcde";
+    str1.removeSymbol('c');
+    REQUIRE(str1 == "abde");
+    REQUIRE(std::strcmp(str1.c_str(), "abde") == 0);
+    REQUIRE(str1.size() == 4);
+
+    str1.removeSymbol('a');
+    REQUIRE(str1 == "bde");
+    REQUIRE(std::strcmp(str1.c_str(), "bde") == 0);
+    REQUIRE(str1.size() == 3);
+
+    str1.removeSymbol('e');
+    REQUIRE(str1 == "bd");
+    REQUIRE(std::strcmp(str1.c_str(), "bd") == 0);
+    REQUIRE(str1.size() == 2);
+
+    SString<6> str2 = "abadea";
+    str2.removeSymbol('a');
+    REQUIRE(str2 == "bde");
+    REQUIRE(std::strcmp(str2.c_str(), "bde") == 0);
+    REQUIRE(str2.size() == 3);
+
+    str2 = "aabdea";
+    str2.removeSymbol('a');
+    REQUIRE(str2 == "bde");
+    REQUIRE(std::strcmp(str2.c_str(), "bde") == 0);
+    REQUIRE(str2.size() == 3);
+
+    str2 = "bdeaa";
+    str2.removeSymbol('a');
+    REQUIRE(str2 == "bde");
+    REQUIRE(std::strcmp(str2.c_str(), "bde") == 0);
+    REQUIRE(str2.size() == 3);
+}

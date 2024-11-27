@@ -2,6 +2,7 @@ target_sources(${PROJECT_NAME} PRIVATE
     MessageSession.h
     DateTimeSession.h DateTimeSession.cpp
     LogSession.h LogSession.cpp
+    NetworkSession.h NetworkSession.cpp
 
     PanelClient.h PanelClient.cpp
     PanelMessage.h

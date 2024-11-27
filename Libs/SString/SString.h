@@ -118,7 +118,6 @@ public:
 
         const uint8_t high8bits = (c >> 8) & 0xFF;
         return append(char(low8bits)) && append(char(high8bits));
-        // return append(char(high8bits)) && append(char(low8bits));
     }
 
     SString &append(const char *data, uint32_t size)
@@ -207,6 +206,22 @@ public:
     }
 
     int toInt() const { return std::atoi(mBuffer.data()); }
+
+    void removeSymbol(char symbol)
+    {
+        for (int i = 0; i < mCurrentByte; ++i) {
+            char c = mBuffer[i];
+            if (c != symbol) {
+                continue;
+            }
+
+            std::memmove(&mBuffer[i], &mBuffer[i + 1], mCurrentByte - i - 1);
+
+            --mCurrentByte;
+            --i;
+            mBuffer[mCurrentByte] = 0;
+        }
+    }
 
     Buffer::const_iterator begin() const { return mBuffer.cbegin(); }
     Buffer::const_iterator end() const { return mBuffer.cend(); }
