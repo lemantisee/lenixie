@@ -9,9 +9,7 @@
 namespace
 {
     const uint32_t pageSize = 0x400; // 1 kB
-    const uint32_t pageAddresStart = 0x0800FC00;
-    const uint32_t pageAddresEnd = pageAddresStart + pageSize - 1;
-    
+    const uint32_t pageAddres = 0x0800FC00;  
 }
 
 void Settings::init() 
@@ -106,12 +104,18 @@ void Settings::readSettings()
 {
     mData = {};
 
-    const uint32_t *source_addr = (uint32_t *)pageAddresStart;
+    const uint32_t *source_addr = (uint32_t *)pageAddres;
     uint32_t *dest_addr = (uint32_t *)&mData;
     for (uint16_t i = 0; i < sizeof(SettingsData) / sizeof(uint32_t); i++) {
         *dest_addr = *(__IO uint32_t *)source_addr;
         ++source_addr;
         ++dest_addr;
+    }
+
+    if (mData.empty()) {
+        // erased flash page filled with 1
+        // clean data to default values to rewrite values from erased page
+        mData = {};
     }
 }
 
@@ -122,7 +126,7 @@ void Settings::writeSettings()
     FLASH_EraseInitTypeDef eraseHandle;
     eraseHandle.TypeErase = FLASH_TYPEERASE_PAGES;
     eraseHandle.NbPages = 1;
-    eraseHandle.PageAddress = pageAddresStart;
+    eraseHandle.PageAddress = pageAddres;
     eraseHandle.Banks = 0;
 
     uint32_t error = 0;
@@ -136,7 +140,7 @@ void Settings::writeSettings()
     // Write settings
     mData.setNotEmpty();
     const uint32_t *source_addr = (uint32_t *)&mData;
-    uint32_t *dest_addr = (uint32_t *)pageAddresStart;
+    uint32_t *dest_addr = (uint32_t *)pageAddres;
     for (uint16_t i = 0; i < sizeof(SettingsData) / sizeof(uint32_t); i++) {
         if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, uint32_t(dest_addr), *source_addr)
             != HAL_OK) {

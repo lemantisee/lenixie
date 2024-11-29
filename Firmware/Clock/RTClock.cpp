@@ -34,7 +34,7 @@ bool logRtcTimeAfterSync = false;
 
 void RTClock::init(ESP8266 *wifi)
 {
-    mTimezone = Settings::getTimezone(3);
+    mTimezone = Settings::getTimezone(mTimezone);
     mNtpUrl = Settings::getNtpUrl("");
     
     mHandle.Instance = RTC;
