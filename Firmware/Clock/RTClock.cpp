@@ -2,7 +2,9 @@
 
 #include <cstdlib>
 
+#include "ESP8266.h"
 #include "SString.h"
+#include "Settings.h"
 #include "Logger.h"
 
 namespace {
@@ -32,6 +34,9 @@ bool logRtcTimeAfterSync = false;
 
 void RTClock::init(ESP8266 *wifi)
 {
+    mTimezone = Settings::getTimezone(3);
+    mNtpUrl = Settings::getNtpUrl("");
+    
     mHandle.Instance = RTC;
     mHandle.Init.AsynchPrediv = RTC_AUTO_1_SECOND;
     mHandle.Init.OutPut = RTC_OUTPUTSOURCE_NONE;
@@ -42,10 +47,10 @@ void RTClock::init(ESP8266 *wifi)
     HAL_RTC_Init(&mHandle);
     __HAL_RTC_ALARM_ENABLE_IT(&mHandle, RTC_IT_SEC);
 
+    wifi->onConnect([this] { syncTime(mNtpUrl.c_str()); });
+
     mNtp.init(wifi);
     mInited = true;
-
-    syncTime(mNtpUrl.c_str());
 }
 
 bool RTClock::setTime(const DateTime &dateTime)
@@ -104,11 +109,15 @@ void RTClock::process()
     }
 }
 
-void RTClock::syncTime(const char *ntpServer)
+void RTClock::syncTime(const SString<128> &ntpServer)
 {
+    if (ntpServer.empty()) {
+        return;
+    }
+
     logRtcTimeAfterSync = true;
 
-    if (auto timestampOpt = mNtp.getTimestamp(ntpServer)) {
+    if (auto timestampOpt = mNtp.getTimestamp(ntpServer.c_str())) {
         const DateTime time = DateTime::fromTimestamp(*timestampOpt + mTimezone * 60 * 60);
         LOG("Ntp Date: %i-%02i-%02i(%i)", time.year, time.month, time.monthDay, time.weekDay);
         LOG("Ntp Time: %02i:%02i:%02i", time.hours, time.minutes, time.seconds);
@@ -197,11 +206,16 @@ void RTClock::updateTime()
     }
 }
 
-void RTClock::setTimeZone(int timezone) { mTimezone = timezone; }
+void RTClock::setTimeZone(int timezone)
+{
+    mTimezone = timezone;
+    Settings::setTimezone(mTimezone);
+}
 
 void RTClock::setNtpServer(const SString<128> &url) 
 {
     mNtpUrl = url;
+    Settings::setNtpUrl(mNtpUrl);
 }
 
 void RTClock::syncNtp() 

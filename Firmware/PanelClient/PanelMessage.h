@@ -22,7 +22,13 @@ public:
         SyncNtpTime = 13,
         GetNtpState = 14,
         NtpState = 15,
+        
+        MessageAck = 50,
     };
+
+    PanelMessage() = default;
+
+    PanelMessage(PanelCommandId cmd) { mJson.add("id", cmd); }
 
     static PanelMessage fromReport(const SString<256> &report)
     {
@@ -35,7 +41,10 @@ public:
     int getInt(const char *key, int defaultValue) const { return mJson.getInt(key, defaultValue); }
     SString<256> getString(const char *key) const { return mJson.get(key); }
 
+    void set(const char *key, int value) { mJson.add(key, value); }
+    void add(const char *key, const char *str) { mJson.add(key, str); }
+    const SString<256> &toString() { return mJson.dump(); }
+
 private:
-    PanelCommandId mCmd = UnknownCommand;
     JsonObject mJson;
 };

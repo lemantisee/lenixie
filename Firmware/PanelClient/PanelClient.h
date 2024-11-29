@@ -16,8 +16,7 @@ public:
     void process();
 
 private:
-    void send(const SString<256> &report);
-
+    void sendAck();
     void onLog();
     void sendLogEnd();
     SString<256> escapeString(const SString<128> &str) const;

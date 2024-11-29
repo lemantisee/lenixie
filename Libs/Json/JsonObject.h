@@ -11,7 +11,7 @@ public:
 
     void add(const char *key, int value);
     void add(const char *key, const char *value);
-    SString<256> &dump();
+    const SString<256> &dump();
 
     int getInt(const char *key, int defaultValue) const;
     bool getBool(const char *key, bool defaultValue) const;

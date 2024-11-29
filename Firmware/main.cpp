@@ -9,6 +9,7 @@
 #include "JsonObject.h"
 #include "Uart.h"
 #include "PanelClient.h"
+#include "Settings.h"
 
 namespace {
 const uint32_t F_CPU = 72000000;
@@ -82,22 +83,12 @@ bool systemClockInit()
 void initWifi(ESP8266 &esp)
 {
     if (!uart.init(USART3, 115200)) {
-        LOG("Unable to init uart");
+        LOG_ERROR("Unable to init uart");
         return;
     }
 
     if (!esp.init(&uart)) {
-        LOG("Unable to init wifi");
-        return;
-    }
-
-    if (esp.isConnected()) {
-        return;
-    }
-
-    LOG("Connecting to wifi network %s", WifiCredentials::userSsid());
-    if (!esp.connectNetwork(WifiCredentials::userSsid(), WifiCredentials::userPassword())) {
-        LOG("Unable to connect to network");
+        LOG_ERROR("Unable to init wifi");
     }
 }
 
@@ -149,6 +140,8 @@ int main(void)
 
     LOG("Started");
 
+    Settings::init();
+
     panelClient.init(&Clock, &wifi);
 
     Indication.setDecoderPins(GPIOB, GPIO_PIN_6, GPIO_PIN_8, GPIO_PIN_9, GPIO_PIN_7);
@@ -158,10 +151,9 @@ int main(void)
     Indication.setSign(DynamicIndication::LSBMinutesTube, GPIOA, GPIO_PIN_3);
     Indication.setNumber(1, 2, 3, 4);
 
-    initWifi(wifi);
-
-    Clock.setTimeZone(3);
     Clock.init(&wifi);
+
+    initWifi(wifi);
 
     for (;;) {
         panelClient.process();

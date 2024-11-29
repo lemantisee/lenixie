@@ -38,7 +38,7 @@ void JsonObject::add(const char *key, const char *value)
     addString(value);
 }
 
-SString<256> &JsonObject::dump()
+const SString<256> &JsonObject::dump()
 {
     if (mBuffer.size() >= mBuffer.capacity()) {
         return mBuffer;

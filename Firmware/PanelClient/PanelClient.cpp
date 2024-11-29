@@ -6,6 +6,20 @@
 
 #include "Logger.h"
 
+class SendAckGuard
+{
+public:
+    SendAckGuard(UsbDevice &usb) : mUsb(usb) {}
+    ~SendAckGuard()
+    {
+        PanelMessage ack(PanelMessage::MessageAck);
+        mUsb.sendData(ack.toString());
+    }
+
+private:
+    UsbDevice &mUsb;
+};
+
 bool PanelClient::init(RTClock *clock, ESP8266 *wifi)
 {
     mClock = clock;
@@ -39,11 +53,18 @@ void PanelClient::process()
     case PanelMessage::SetNtpServer: onSetServer(msg); break;
     case PanelMessage::SetTimezone: onSetTimezone(msg); break;
 
-    default: LOG_ERROR("Unknown message: %i", msg.getCmd()); break;
+    default:
+        LOG_ERROR("Unknown message: %i", msg.getCmd());
+        sendAck();
+        break;
     }
 }
 
-void PanelClient::send(const SString<256> &report) { mUsb.sendData(report); }
+void PanelClient::sendAck() 
+{
+    PanelMessage ack(PanelMessage::MessageAck);
+    mUsb.sendData(ack.toString());
+}
 
 void PanelClient::onLog()
 {
@@ -65,14 +86,14 @@ void PanelClient::onLog()
     j.add("id", PanelMessage::LogUnit);
     j.add("d", escapedString.c_str());
 
-    send(j.dump());
+    mUsb.sendData(j.dump());
 }
 
 void PanelClient::sendLogEnd()
 {
     JsonObject j;
     j.add("id", PanelMessage::LogEnd);
-    send(j.dump());
+    mUsb.sendData(j.dump());
 }
 
 SString<256> PanelClient::escapeString(const SString<128> &str) const
@@ -107,10 +128,11 @@ void PanelClient::onGetDateTime()
 
     if (report.empty()) {
         LOG("Invalid time report");
+        sendAck();
         return;
     }
 
-    send(report);
+    mUsb.sendData(report);
 }
 
 void PanelClient::onSetDateTime(const PanelMessage &msg)
@@ -127,6 +149,8 @@ void PanelClient::onSetDateTime(const PanelMessage &msg)
     dateTime.seconds = msg.getInt("s", 0);
 
     mClock->setTime(dateTime);
+
+    sendAck();
 }
 
 SString<256> PanelClient::createDateTimeReport(const DateTime &dateTime) const
@@ -155,11 +179,13 @@ void PanelClient::onNetworkState()
         json.add("ssid", mWifi->getSsid().c_str());
     }
 
-    send(json.dump());
+    mUsb.sendData(json.dump());
 }
 
 void PanelClient::onNetworkConnect(const PanelMessage &msg)
 {
+    SendAckGuard g(mUsb);
+
     SString<256> ssid = msg.getString("s");
     if (ssid.empty()) {
         LOG_ERROR("Empty ssid");
@@ -187,13 +213,19 @@ void PanelClient::onNtpState()
     json.add("url", mClock->getNtpServer().c_str());
     json.add("t", mClock->getTimeZone());
 
-    send(json.dump());
+    mUsb.sendData(json.dump());
 }
 
-void PanelClient::onNtpSync() { mClock->syncNtp(); }
+void PanelClient::onNtpSync()
+{
+    mClock->syncNtp();
+    sendAck();
+}
 
 void PanelClient::onSetTimezone(const PanelMessage &msg) 
 {
+    SendAckGuard g(mUsb);
+
     int timezone = msg.getInt("t", 15);
 
     if (timezone > 12 || timezone < -12) {
@@ -208,6 +240,8 @@ void PanelClient::onSetTimezone(const PanelMessage &msg)
 
 void PanelClient::onSetServer(const PanelMessage &msg)
 {
+    SendAckGuard g(mUsb);
+    
     SString<256> url = msg.getString("url");
     if (url.empty()) {
         LOG_ERROR("Empty ntp url");

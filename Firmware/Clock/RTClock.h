@@ -28,7 +28,7 @@ public:
     void syncNtp();
 
 private:
-    void syncTime(const char *ntpServer);
+    void syncTime(const SString<128> &ntpServer);
     bool setRtcTime(uint8_t hours, uint8_t minutes, uint8_t seconds);
     bool setRtcDate(uint32_t year, uint8_t month, uint8_t mday, uint8_t wday);
     void updateTime();

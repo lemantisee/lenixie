@@ -19,6 +19,7 @@ add_executable(${PROJECT_NAME}
 
 add_subdirectory(Core)
 add_subdirectory(PanelClient)
+add_subdirectory(Settings)
 
 target_include_directories( ${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}

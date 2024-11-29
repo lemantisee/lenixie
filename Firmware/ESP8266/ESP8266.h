@@ -1,6 +1,6 @@
 #pragma once
 
-#include "stm32f1xx.h"
+#include <functional>
 
 #include "SString.h"
 
@@ -29,7 +29,9 @@ public:
     bool SendString(const char *str, const char *ip, uint16_t port);
     bool hasIncomeData();
     bool getData(uint8_t *buffer, uint8_t size);
-    const SString<65> &getSsid() const;
+    SString<128> getSsid() const;
+
+    void onConnect(std::function<void()> func);
 
 private:
     enum Encryption {
@@ -59,16 +61,16 @@ private:
     void closeCurrentConnection();
     bool enableEcho(bool state);
     bool enableMultipleConnections(bool state);
-    void obtainSSID();
+    bool enableAutoconnection(bool state);
     void printVersion();
     void checkConnection();
-    void checkSSID();
+    bool connectToAp(const char *ssid, const char *password);
+    void connecToSavedNetwork();
 
     Uart *mUart = nullptr;
     SString<256> mBuffer;
     Mode mMode = Unknown;
     uint32_t mLastConnectionCheck = 0;
-    uint32_t mLastSSIDCheck = 0;
-    SString<65> mConnectedSSID;
-    SString<65> mConnectedPassword;
+
+    std::function<void()> mOnConnect;
 };

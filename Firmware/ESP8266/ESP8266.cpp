@@ -7,10 +7,10 @@
 #include "EspAtCommand.h"
 #include "WifiCredentials.h"
 #include "Uart.h"
+#include "Settings.h"
 
 namespace {
 constexpr uint32_t checkConnectionPeriodMs = 30 * 60 * 1000; // 30 min
-constexpr uint32_t obtainSSIDPeriodMs = 1000; // 30 min
 } // namespace
 
 bool ESP8266::init(Uart *uart)
@@ -20,25 +20,28 @@ bool ESP8266::init(Uart *uart)
         [this](const SString<64> &data) { mBuffer.append(data.c_str(), data.size()); });
 
     if (!enableEcho(false)) {
-        LOG("Unable to echo");
+        LOG_ERROR("Unable to disable echo");
+        return false;
+    }
+
+    if (!enableAutoconnection(false)) {
+        LOG_ERROR("Unable to disable autoconnection");
         return false;
     }
 
     printVersion();
 
     if (!enableMultipleConnections(false)) {
-        LOG("enableMultipleConnections fails");
+        LOG_ERROR("Unable to disable multiple connections");
         return false;
     }
 
     if (!setMode(Station)) {
-        LOG("setMode fails");
+        LOG_ERROR("Unable to station mode");
         return false;
     }
 
-    // HAL_Delay(2000);
-
-    // obtainSSID();
+    connecToSavedNetwork();
 
     return true;
 }
@@ -50,7 +53,6 @@ void ESP8266::process()
     }
 
     checkConnection();
-    checkSSID();
 }
 
 void ESP8266::sendCommand(const char *cmd, bool sendEnd)
@@ -75,7 +77,7 @@ bool ESP8266::setMode(Mode mode)
         return false;
     }
 
-    EspAtCommand cmd("AT+CWMODE_DEF=");
+    EspAtCommand cmd("AT+CWMODE_CUR=");
     cmd.add(mode);
 
     sendCommand(cmd);
@@ -108,21 +110,13 @@ bool ESP8266::waitForAnswer(const char *answer1, uint32_t timeoutMs, const char 
 
 bool ESP8266::connectNetwork(const char *ssid, const char *password)
 {
-    if (!setMode(ESP8266::Station)) {
+    if (!connectToAp(ssid, password)) {
         return false;
     }
 
-    EspAtCommand cmd("AT+CWJAP_DEF=");
-    cmd.add(ssid).add(password);
-
-    sendCommand(cmd);
-    const bool ok = waitForAnswer("OK", 10000);
-    if (ok) {
-        mConnectedSSID = ssid;
-        mConnectedPassword = password;
-    }
-
-    return ok;
+    Settings::setWifiSSID(ssid);
+    Settings::setWifiPassword(password);
+    return true;
 }
 
 bool ESP8266::test()
@@ -185,9 +179,14 @@ bool ESP8266::getData(uint8_t *buffer, uint8_t size)
     return true;
 }
 
-const SString<65> &ESP8266::getSsid() const
+SString<128> ESP8266::getSsid() const
 {
-    return mConnectedSSID;
+    return Settings::getWifiSSID("");
+}
+
+void ESP8266::onConnect(std::function<void()> func) 
+{
+    mOnConnect = std::move(func);
 }
 
 bool ESP8266::switchToAP()
@@ -270,37 +269,13 @@ bool ESP8266::enableMultipleConnections(bool state)
     return waitForAnswer("OK", 2000);
 }
 
-void ESP8266::obtainSSID()
+bool ESP8266::enableAutoconnection(bool state)
 {
-    if (!isConnected()) {
-        return;
-    }
+    EspAtCommand cmd("AT+CWAUTOCONN=");
+    cmd.add(state ? uint32_t(1) : uint32_t(0));
+    sendCommand(cmd);
 
-    uint8_t tries = 2;
-    while (tries > 0) {
-        --tries;
-
-        sendCommand("AT+CWJAP_DEF?", true);
-        if (!waitForAnswer("OK", 3000)) {
-            continue;
-        }
-        //answer: +CWJAP:<ssid>, <bssid>, <channel>, <rssi>
-        std::optional<uint32_t> posStartOpt = mBuffer.find(":");
-        std::optional<uint32_t> posEndOpt = mBuffer.find(",");
-
-        if (!posStartOpt || !posEndOpt) {
-            LOG("Error: %s", mBuffer.c_str());
-            break;
-        }
-
-        const size_t ssidSize = *posEndOpt - (*posStartOpt + 1);
-
-        mConnectedSSID = SString<65>(mBuffer.c_str() + *posStartOpt + 1, ssidSize);
-        mConnectedSSID.removeSymbol('\"');
-        if (!mConnectedSSID.empty()) {
-            break;
-        }
-    }
+    return waitForAnswer("OK", 2000);
 }
 
 void ESP8266::printVersion() 
@@ -324,29 +299,45 @@ void ESP8266::checkConnection()
         return;
     }
 
-    if (!connectNetwork(mConnectedSSID.c_str(), mConnectedPassword.c_str())) {
-        LOG("Unable to connect to previuos wifi");
-        return;
-    }
-
-    LOG("Reconnected to previuos wifi");
+    connecToSavedNetwork();
 }
 
-void ESP8266::checkSSID()
+bool ESP8266::connectToAp(const char *ssid, const char *password)
 {
-    if (!mConnectedSSID.empty()) {
-        mLastSSIDCheck = 0;
+    if (!setMode(Station)) {
+        return false;
+    }
+
+    EspAtCommand cmd("AT+CWJAP_CUR=");
+    cmd.add(ssid).add(password);
+
+    sendCommand(cmd);
+    bool ok = waitForAnswer("OK", 10000);
+
+    if (ok && mOnConnect) {
+        mOnConnect();
+    }
+
+    return ok;
+}
+
+void ESP8266::connecToSavedNetwork()
+{
+    const SString<128> ssid = Settings::getWifiSSID("");
+    if (ssid.empty()) {
+        LOG("No ssid");
         return;
     }
 
-    if (mLastSSIDCheck + obtainSSIDPeriodMs > HAL_GetTick()) {
+    const SString<128> password = Settings::getWifiPassword("");
+    if (password.empty()) {
+        LOG("No wifi password");
         return;
     }
 
-    mLastSSIDCheck = HAL_GetTick();
-
-    if (isConnected()) {
-        obtainSSID();
+    LOG("Connecting to wifi network %s", ssid.c_str());
+    if (!connectNetwork(ssid.c_str(), password.c_str())) {
+        LOG("Unable to connect to network");
     }
 }
 

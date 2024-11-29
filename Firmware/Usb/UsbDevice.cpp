@@ -81,6 +81,7 @@ void UsbDevice::onReceive(uint8_t *state, uint32_t size)
 
     switch (packet.getType()) {
     case DataPacket::PacketPayload: {
+        mMsgReceived = false;
         const SString<60> &payload = packet.getPayload();
         mIncomeBuffer.append(payload.c_str(), payload.size());
     } break;

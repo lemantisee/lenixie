@@ -4,6 +4,8 @@
 #include <array>
 #include <ctime>
 
+#include "stm32f1xx.h"
+
 #include "ESP8266.h"
 #include "Logger.h"
 #include "SString.h"

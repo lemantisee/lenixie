@@ -1,5 +1,3 @@
-.pio
-/src/WifiCredentials.h
-.editorconfig
+/Firmware/WifiCredentials.h
 /.vscode
 /build
