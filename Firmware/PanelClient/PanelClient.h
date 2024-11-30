@@ -3,7 +3,7 @@
 #include "UsbDevice.h"
 
 class RTClock;
-class ESP8266;
+class Wifi;
 class DateTime;
 class PanelMessage;
 
@@ -12,7 +12,7 @@ class PanelClient
 public:
     PanelClient() = default;
     
-    bool init(RTClock *clock, ESP8266 *wifi);
+    bool init(RTClock *clock, Wifi *wifi);
     void process();
 
 private:
@@ -27,6 +27,8 @@ private:
 
     void onNetworkState();
     void onNetworkConnect(const PanelMessage &msg);
+    void onNetworkLastConnect();
+    void onNetworkDisconnect();
 
     void onNtpState();
     void onNtpSync();
@@ -34,7 +36,7 @@ private:
     void onSetServer(const PanelMessage &msg);
 
     RTClock *mClock = nullptr;
-    ESP8266 *mWifi = nullptr;
+    Wifi *mWifi = nullptr;
 
     UsbDevice mUsb;
 };

@@ -1,6 +1,5 @@
 add_executable(${PROJECT_NAME}
     main.cpp
-    Uart.h Uart.cpp
 
     Clock/DateTime.h Clock/DateTime.cpp
     Clock/NTPRequest.h Clock/NTPRequest.cpp
@@ -8,6 +7,8 @@ add_executable(${PROJECT_NAME}
 
     ESP8266/ESP8266.h ESP8266/ESP8266.cpp
     ESP8266/EspAtCommand.h ESP8266/EspAtCommand.cpp
+    ESP8266/Uart.h ESP8266/Uart.cpp
+    ESP8266/Wifi.h ESP8266/Wifi.cpp
 
     Indicator/BCDDecoder.h Indicator/BCDDecoder.cpp
     Indicator/DynamicIndication.h Indicator/DynamicIndication.cpp

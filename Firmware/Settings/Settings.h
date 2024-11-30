@@ -26,6 +26,7 @@ private:
     static Settings &getInstance();
     void readSettings();
     void writeSettings();
+    static void copyString(char *dest, const SString<128> &str);
 
     SettingsData mData;
 };

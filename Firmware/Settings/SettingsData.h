@@ -22,6 +22,7 @@ private:
     uint32_t mBoolArray = 0;
 
 public:
+    static const uint16_t stringLength = 128;
     int timezone = 0;
     char ntpUrl[128];
     char wifiSsid[128];

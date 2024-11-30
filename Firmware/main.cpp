@@ -2,7 +2,7 @@
 
 #include "DynamicIndication.h"
 #include "RTClock.h"
-#include "ESP8266.h"
+#include "Wifi.h"
 #include "Logger.h"
 #include "SString.h"
 #include "WifiCredentials.h"
@@ -14,26 +14,8 @@
 namespace {
 const uint32_t F_CPU = 72000000;
 
-volatile bool testBlinkStart = false;
-volatile uint8_t testTimer = 0;
-uint16_t sysTicks = 0;
-
 DynamicIndication Indication;
 RTClock Clock;
-ESP8266 wifi;
-PanelClient panelClient;
-Uart uart;
-
-enum Command {
-    DeviceID = 100,
-    SetWifi = 101,
-    SetNtpServer = 102,
-    SetTime = 103,
-    ResetFabric = 104,
-    TestBlink = 105,
-    EnableNTP = 106,
-    SetTimeZone = 107
-};
 
 bool systemClockInit()
 {
@@ -80,18 +62,6 @@ bool systemClockInit()
     return true;
 }
 
-void initWifi(ESP8266 &esp)
-{
-    if (!uart.init(USART3, 115200)) {
-        LOG_ERROR("Unable to init uart");
-        return;
-    }
-
-    if (!esp.init(&uart)) {
-        LOG_ERROR("Unable to init wifi");
-    }
-}
-
 } // namespace
 
 extern "C" {
@@ -106,6 +76,7 @@ void HAL_MspInit(void)
 
 void SysTick_Handler()
 {
+    static uint16_t sysTicks = 0;
     // called every 50us
     HAL_SYSTICK_IRQHandler();
 
@@ -142,6 +113,8 @@ int main(void)
 
     Settings::init();
 
+    Wifi wifi;
+    PanelClient panelClient;
     panelClient.init(&Clock, &wifi);
 
     Indication.setDecoderPins(GPIOB, GPIO_PIN_6, GPIO_PIN_8, GPIO_PIN_9, GPIO_PIN_7);
@@ -153,7 +126,9 @@ int main(void)
 
     Clock.init(&wifi);
 
-    initWifi(wifi);
+    if (!wifi.init(USART3, 115200)) {
+        LOG_ERROR("Unable to init wifi");
+    }
 
     for (;;) {
         panelClient.process();

@@ -2,9 +2,9 @@
 
 SettingsData::SettingsData()
 {
-    std::memset(ntpUrl, 0, 128);
-    std::memset(wifiSsid, 0, 128);
-    std::memset(wifiPassword, 0, 128);
+    std::memset(ntpUrl, 0, stringLength);
+    std::memset(wifiSsid, 0, stringLength);
+    std::memset(wifiPassword, 0, stringLength);
 }
 
 bool SettingsData::getBool(BoolPosition pos) const { return mBoolArray & (1 << pos); }

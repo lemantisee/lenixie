@@ -66,31 +66,19 @@ void Settings::setTimezone(int timezone)
 
 void Settings::setNtpUrl(const SString<128> &url) 
 {
-    if (url.empty()) {
-        return;
-    }
-
-    std::strcpy(getInstance().mData.ntpUrl, url.c_str());
+    copyString(getInstance().mData.ntpUrl, url);
     getInstance().writeSettings();
 }
 
 void Settings::setWifiSSID(const SString<128> &ssid)
 {
-    if (ssid.empty()) {
-        return;
-    }
-
-    std::strcpy(getInstance().mData.wifiSsid, ssid.c_str());
+    copyString(getInstance().mData.wifiSsid, ssid);
     getInstance().writeSettings();
 }
 
 void Settings::setWifiPassword(const SString<128> &password)
 {
-    if (password.empty()) {
-        return;
-    }
-
-    std::strcpy(getInstance().mData.wifiPassword, password.c_str());
+    copyString(getInstance().mData.wifiPassword, password);
     getInstance().writeSettings();
 }
 
@@ -152,4 +140,13 @@ void Settings::writeSettings()
     }
 
     HAL_FLASH_Lock();
+}
+
+void Settings::copyString(char *dest, const SString<128> &str)
+{
+    if (str.empty()) {
+        std::memset(dest, 0, SettingsData::stringLength);
+    } else {
+        std::strcpy(dest, str.c_str());
+    }
 }

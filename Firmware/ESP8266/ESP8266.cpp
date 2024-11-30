@@ -5,19 +5,16 @@
 #include "SString.h"
 #include "Logger.h"
 #include "EspAtCommand.h"
-#include "WifiCredentials.h"
-#include "Uart.h"
-#include "Settings.h"
 
-namespace {
-constexpr uint32_t checkConnectionPeriodMs = 30 * 60 * 1000; // 30 min
-} // namespace
-
-bool ESP8266::init(Uart *uart)
+bool ESP8266::init(USART_TypeDef *usart, uint32_t baudrate)
 {
-    mUart = uart;
-    mUart->onReceive(
+    mUart.onReceive(
         [this](const SString<64> &data) { mBuffer.append(data.c_str(), data.size()); });
+
+    if (!mUart.init(usart, baudrate)) {
+        LOG_ERROR("Unable to init uart");
+        return false;
+    }
 
     if (!enableEcho(false)) {
         LOG_ERROR("Unable to disable echo");
@@ -41,27 +38,16 @@ bool ESP8266::init(Uart *uart)
         return false;
     }
 
-    connecToSavedNetwork();
-
     return true;
-}
-
-void ESP8266::process()
-{
-    if (mMode != Station && mMode != StationAndSoftAP) {
-        return;
-    }
-
-    checkConnection();
 }
 
 void ESP8266::sendCommand(const char *cmd, bool sendEnd)
 {
     mBuffer.clear();
-    mUart->send(cmd, 100);
+    mUart.send(cmd, 100);
     if (sendEnd) {
         const char *cmdEnd = "\r\n";
-        mUart->send(cmdEnd, 100);
+        mUart.send(cmdEnd, 100);
     }
 }
 
@@ -103,20 +89,9 @@ bool ESP8266::waitForAnswer(const char *answer1, uint32_t timeoutMs, const char 
         }
     }
 
-    LOG("Answer failed with buffer %s", mBuffer.c_str());
+    LOG("Answer failed: %s", mBuffer.c_str());
     mBuffer.clear();
     return false;
-}
-
-bool ESP8266::connectNetwork(const char *ssid, const char *password)
-{
-    if (!connectToAp(ssid, password)) {
-        return false;
-    }
-
-    Settings::setWifiSSID(ssid);
-    Settings::setWifiPassword(password);
-    return true;
 }
 
 bool ESP8266::test()
@@ -127,10 +102,6 @@ bool ESP8266::test()
 
 bool ESP8266::connectToServerUDP(const char *host, uint16_t port)
 {
-    if (!isConnected()) {
-        return false;
-    }
-
     //AT+CIPSTART="TCP","192.168.0.65",333
     //"UDP", "0", 0, 1025, 2
     uint16_t localPort = 3210;
@@ -144,10 +115,6 @@ bool ESP8266::connectToServerUDP(const char *host, uint16_t port)
 
 bool ESP8266::sendUDPpacket(const char *msg, uint16_t size)
 {
-    if (!isConnected()) {
-        return false;
-    }
-
     EspAtCommand cmd("AT+CIPSEND=");
     cmd.add(size);
 
@@ -157,7 +124,7 @@ bool ESP8266::sendUDPpacket(const char *msg, uint16_t size)
     }
 
     mBuffer.clear();
-    mUart->send((uint8_t *)msg, size, 100);
+    mUart.send((uint8_t *)msg, size, 100);
 
     return waitForAnswer("OK", 2000);
 }
@@ -179,24 +146,49 @@ bool ESP8266::getData(uint8_t *buffer, uint8_t size)
     return true;
 }
 
-SString<128> ESP8266::getSsid() const
+ESP8266::Mode ESP8266::getMode() const { return mMode; }
+
+ESP8266::ConnectionStatus ESP8266::getConnectionStatus()
 {
-    return Settings::getWifiSSID("");
+    if (mMode != Station && mMode != StationAndSoftAP) {
+        return DisconnectedStatus;
+    }
+
+    sendCommand("AT+CIPSTATUS", true);
+
+    const uint32_t timeout = 3000 + HAL_GetTick();
+    const char *statusStr = "STATUS:";
+    const uint32_t statusStrSize = std::strlen(statusStr);
+    const uint8_t statusSymbolSize = 1;
+
+    std::optional<uint32_t> posOpt = 0;
+
+    while ((HAL_GetTick() < timeout)) {
+        posOpt = mBuffer.find(statusStr);
+
+        if (posOpt && mBuffer.size() >= statusStrSize + statusSymbolSize) {
+            break;
+        }
+    }
+
+    if (!posOpt) {
+        return DisconnectedStatus;
+    }
+
+    const uint32_t pos = *posOpt + std::strlen(statusStr);
+
+    SString<1> statusStateStr(&mBuffer[pos], statusSymbolSize);
+    return ConnectionStatus(statusStateStr.toInt());
 }
 
-void ESP8266::onConnect(std::function<void()> func) 
-{
-    mOnConnect = std::move(func);
-}
-
-bool ESP8266::switchToAP()
+bool ESP8266::switchToAP(const char *ssid, const char *password)
 {
     LOG("Starting AP");
     if (!setMode(ESP8266::SoftAP)) {
         return false;
     }
 
-    if (!setAP(WifiCredentials::defaultApSsid(), WifiCredentials::defaultApPassword())) {
+    if (!setAP(ssid, password)) {
         return false;
     }
 
@@ -287,21 +279,6 @@ void ESP8266::printVersion()
     LOG("%s", mBuffer.c_str());
 }
 
-void ESP8266::checkConnection() 
-{
-    if (mLastConnectionCheck + checkConnectionPeriodMs > HAL_GetTick()) {
-        return;
-    }
-
-    mLastConnectionCheck = HAL_GetTick();
-
-    if (isConnected()) {
-        return;
-    }
-
-    connecToSavedNetwork();
-}
-
 bool ESP8266::connectToAp(const char *ssid, const char *password)
 {
     if (!setMode(Station)) {
@@ -312,33 +289,18 @@ bool ESP8266::connectToAp(const char *ssid, const char *password)
     cmd.add(ssid).add(password);
 
     sendCommand(cmd);
-    bool ok = waitForAnswer("OK", 10000);
-
-    if (ok && mOnConnect) {
-        mOnConnect();
-    }
-
-    return ok;
+    return waitForAnswer("OK", 10000);
 }
 
-void ESP8266::connecToSavedNetwork()
+bool ESP8266::disconnectFromAp()
 {
-    const SString<128> ssid = Settings::getWifiSSID("");
-    if (ssid.empty()) {
-        LOG("No ssid");
-        return;
+    if (!setMode(Station)) {
+        return false;
     }
 
-    const SString<128> password = Settings::getWifiPassword("");
-    if (password.empty()) {
-        LOG("No wifi password");
-        return;
-    }
-
-    LOG("Connecting to wifi network %s", ssid.c_str());
-    if (!connectNetwork(ssid.c_str(), password.c_str())) {
-        LOG("Unable to connect to network");
-    }
+    EspAtCommand cmd("AT+CWQAP");
+    sendCommand(cmd);
+    return waitForAnswer("OK", 3000);
 }
 
 bool ESP8266::setAPip(const char *ip)
@@ -355,48 +317,4 @@ bool ESP8266::reset()
     sendCommand("AT+RST", true);
     HAL_Delay(10000);
     return true;
-}
-
-bool ESP8266::isConnected()
-{
-    if (mMode != Station && mMode != StationAndSoftAP) {
-        return false;
-    }
-
-    sendCommand("AT+CIPSTATUS", true);
-
-    const uint32_t timeout = 3000 + HAL_GetTick();
-    const char *statusStr = "STATUS:";
-    const uint32_t statusStrSize = std::strlen(statusStr);
-    const uint8_t statusSymbolSize = 1;
-
-    std::optional<uint32_t> posOpt = 0;
-
-    while ((HAL_GetTick() < timeout)) {
-        posOpt = mBuffer.find(statusStr);
-
-        if (posOpt && mBuffer.size() >= statusStrSize + statusSymbolSize) {
-            break;
-        }
-    }
-
-    if (!posOpt) {
-        return false;
-    }
-
-    const uint32_t pos = *posOpt + std::strlen(statusStr);
-
-    SString<1> statusStateStr(&mBuffer[pos], statusSymbolSize);
-    ConnectionStatus status = ConnectionStatus(statusStateStr.toInt());
-
-    switch (status)
-    {
-    case GotIpStatus:
-    case ConnectedStatus:
-        return true;
-    default:
-        break;
-    }
-
-    return false;
 }

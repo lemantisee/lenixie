@@ -6,7 +6,7 @@
 
 #include "stm32f1xx.h"
 
-#include "ESP8266.h"
+#include "Wifi.h"
 #include "Logger.h"
 #include "SString.h"
 
@@ -31,7 +31,7 @@ struct ntp_packet
 };
 } // namespace
 
-void NTPRequest::init(ESP8266 *wifi) { mWifi = wifi; }
+void NTPRequest::init(Wifi *wifi) { mWifi = wifi; }
 
 std::optional<int64_t> NTPRequest::getNtpTimestamp()
 {

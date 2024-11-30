@@ -1,26 +1,31 @@
 #pragma once
 
-#include <functional>
-
-#include "SString.h"
+#include "Uart.h"
 
 class EspAtCommand;
-class Uart;
 
 class ESP8266
 {
 public:
+    enum Mode { Unknown = 0, Station = 1, SoftAP = 2, StationAndSoftAP = 3 };
+
+    enum ConnectionStatus {
+        GotIpStatus = 2,
+        ConnectedStatus = 3,
+        DisconnectedStatus = 4,
+        WifiConnectionFail = 5
+    };
+
     ESP8266() = default;
 
-    bool init(Uart *uart);
-    void process();
+    bool init(USART_TypeDef *usart, uint32_t baudrate);
 
-    bool isConnected();
-    bool connectNetwork(const char *ssid, const char *password);
+    bool connectToAp(const char *ssid, const char *password);
+    bool disconnectFromAp();
 
     bool setAPip(const char *ip);
 
-    bool switchToAP();
+    bool switchToAP(const char *ssid, const char *password);
 
     bool connectToServerUDP(const char *host, uint16_t port);
     bool sendUDPpacket(const char *msg, uint16_t size);
@@ -29,9 +34,8 @@ public:
     bool SendString(const char *str, const char *ip, uint16_t port);
     bool hasIncomeData();
     bool getData(uint8_t *buffer, uint8_t size);
-    SString<128> getSsid() const;
-
-    void onConnect(std::function<void()> func);
+    Mode getMode() const;
+    ConnectionStatus getConnectionStatus();
 
 private:
     enum Encryption {
@@ -40,16 +44,6 @@ private:
         WPA2_PSK = 3,
         WPA_WPA2_PSK = 4,
     };
-
-    enum ConnectionStatus
-    {
-        GotIpStatus = 2,
-        ConnectedStatus = 3,
-        DisconnectedStatus = 4,
-        WifiConnectionFail = 5
-    };
-
-    enum Mode { Unknown = 0, Station = 1, SoftAP = 2, StationAndSoftAP = 3 };
 
     bool setMode(Mode mode);
     bool setAP(const char *ssid, const char *pass);
@@ -63,14 +57,8 @@ private:
     bool enableMultipleConnections(bool state);
     bool enableAutoconnection(bool state);
     void printVersion();
-    void checkConnection();
-    bool connectToAp(const char *ssid, const char *password);
-    void connecToSavedNetwork();
 
-    Uart *mUart = nullptr;
+    Uart mUart;
     SString<256> mBuffer;
     Mode mMode = Unknown;
-    uint32_t mLastConnectionCheck = 0;
-
-    std::function<void()> mOnConnect;
 };

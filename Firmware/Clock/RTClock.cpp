@@ -2,7 +2,7 @@
 
 #include <cstdlib>
 
-#include "ESP8266.h"
+#include "Wifi.h"
 #include "SString.h"
 #include "Settings.h"
 #include "Logger.h"
@@ -32,7 +32,7 @@ bool logRtcTimeAfterSync = false;
 
 } // namespace
 
-void RTClock::init(ESP8266 *wifi)
+void RTClock::init(Wifi *wifi)
 {
     mTimezone = Settings::getTimezone(mTimezone);
     mNtpUrl = Settings::getNtpUrl("");

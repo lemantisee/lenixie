@@ -7,13 +7,13 @@
 #include "DateTime.h"
 #include "SString.h"
 
-class ESP8266;
+class Wifi;
 
 class RTClock
 {
 public:
     RTClock() = default;
-    void init(ESP8266 *wifi);
+    void init(Wifi *wifi);
     bool setTime(const DateTime &dateTime);
     bool setTime(uint8_t hours, uint8_t minutes, uint8_t seconds);
     void setTimeZone(int timezone);

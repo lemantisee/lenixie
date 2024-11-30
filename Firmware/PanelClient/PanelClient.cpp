@@ -1,7 +1,7 @@
 #include "PanelClient.h"
 
 #include "RTClock.h"
-#include "ESP8266.h"
+#include "Wifi.h"
 #include "PanelMessage.h"
 
 #include "Logger.h"
@@ -20,7 +20,7 @@ private:
     UsbDevice &mUsb;
 };
 
-bool PanelClient::init(RTClock *clock, ESP8266 *wifi)
+bool PanelClient::init(RTClock *clock, Wifi *wifi)
 {
     mClock = clock;
     mWifi = wifi;
@@ -47,6 +47,8 @@ void PanelClient::process()
 
     case PanelMessage::GetNetworkState: onNetworkState(); break;
     case PanelMessage::ConnectToWifi: onNetworkConnect(msg); break;
+    case PanelMessage::ConnectToLastWifi: onNetworkLastConnect(); break;
+    case PanelMessage::DisconnectWifi: onNetworkDisconnect(); break;
 
     case PanelMessage::GetNtpState: onNtpState(); break;
     case PanelMessage::SyncNtpTime: onNtpSync(); break;
@@ -186,15 +188,11 @@ void PanelClient::onNetworkConnect(const PanelMessage &msg)
 {
     SendAckGuard g(mUsb);
 
-    SString<256> ssid = msg.getString("s");
-    if (ssid.empty()) {
-        LOG_ERROR("Empty ssid");
-        return;
-    }
+    const SString<256> ssid = msg.getString("s");
+    const SString<256> pass = msg.getString("p");
 
-    SString<256> pass = msg.getString("p");
-    if (pass.empty()) {
-        LOG_ERROR("Empty password");
+    if (ssid.empty() || pass.empty()) {
+        mWifi->forgetNetwork();
         return;
     }
 
@@ -204,6 +202,23 @@ void PanelClient::onNetworkConnect(const PanelMessage &msg)
     }
 
     LOG("Successfully connected to %s", ssid.c_str());
+}
+
+void PanelClient::onNetworkLastConnect() 
+{
+    if (!mWifi->connecToLastNetwork()) {
+        LOG_ERROR("Unable to connect to last network");
+    } else {
+        LOG("Successfully connected to %s", mWifi->getSsid().c_str());
+    }
+
+    sendAck();
+}
+
+void PanelClient::onNetworkDisconnect() 
+{
+    mWifi->disconnectNetwork();
+    sendAck();
 }
 
 void PanelClient::onNtpState() 
