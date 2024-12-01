@@ -42,5 +42,5 @@ private:
     uint32_t mTimer = 0;
     VisualStage mVisualStage = FullBrightness;
     uint32_t mSingOnTime = 0;
-    uint32_t mFadeTime = 0;
+    uint32_t mFadeTicks = 0;
 };

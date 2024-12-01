@@ -1,16 +1,20 @@
 #include "DynamicIndication.h"
 
 namespace {
-constexpr uint16_t indicationFrameTime = 320; // 16ms
-constexpr uint16_t fullBrightnessTime = 50;   // 3 ms
-constexpr uint8_t dimmedTime = 4;             // 200us
-constexpr uint32_t fadeTime = 10000;          //500ms
+constexpr uint8_t updateFreqUs = 50;
+constexpr uint16_t indicationFrameTicks = (16 * 1000) / updateFreqUs; // 16ms - 320
+constexpr uint16_t fullBrightnessTicks = (3 * 1000) / updateFreqUs;   // 3 ms
+constexpr uint8_t dimmedTicks = 200 / updateFreqUs; // 200us
+constexpr uint32_t fadeTicks = (500 * 1000) / updateFreqUs; //500ms
+
+constexpr uint32_t fadeTicksRange = fullBrightnessTicks - dimmedTicks;
+constexpr uint32_t fadeTicksStep = fadeTicks / fadeTicksRange;
 } // namespace
 
 DynamicIndication::DynamicIndication()
 {
     mSigns.back().isDummy = true;
-    mSingOnTime = fullBrightnessTime;
+    mSingOnTime = fullBrightnessTicks;
 }
 
 void DynamicIndication::setDecoderPins(GPIO_TypeDef *port, uint16_t Apin, uint16_t Bpin,
@@ -85,9 +89,10 @@ void DynamicIndication::clearSigns()
         HAL_GPIO_WritePin(sign.port, sign.pin, GPIO_PIN_RESET);
     }
 
-    for (int i = 0; i < 4000; i++) {
-        asm("nop");
-    }
+    //TODO this function called in interrupt. Not allowed any delays here
+    // for (int i = 0; i < 4000; i++) {
+    //     asm("nop");
+    // }
 }
 
 const DynamicIndication::Sign *DynamicIndication::getCurrentSign()
@@ -100,7 +105,7 @@ const DynamicIndication::Sign *DynamicIndication::getCurrentSign()
         }
     }
 
-    if (mTimer >= indicationFrameTime + 1) {
+    if (mTimer >= indicationFrameTicks + 1) {
         mTimer = 0;
     }
 
@@ -113,12 +118,10 @@ void DynamicIndication::updateDimm()
         return;
     }
 
-    const uint32_t range = fullBrightnessTime - dimmedTime;
-    const uint32_t timeStep = fadeTime / range;
+    ++mFadeTicks;
 
-    ++mFadeTime;
-    for (uint32_t r = 0; r < range; ++r) {
-        if (r * timeStep == mFadeTime) {
+    for (uint32_t r = 0; r < fadeTicksRange; ++r) {
+        if (r * fadeTicksStep == mFadeTicks) {
             if (mVisualStage == FadeIn) {
                 --mSingOnTime;
             } else if (mVisualStage == FadeOut) {
@@ -128,20 +131,20 @@ void DynamicIndication::updateDimm()
         }
     }
 
-    if (mFadeTime != fadeTime) {
+    if (mFadeTicks != fadeTicks) {
         return;
     }
 
-    mFadeTime = 0;
+    mFadeTicks = 0;
 
     if (mVisualStage == FadeIn) {
-        mSingOnTime = dimmedTime;
+        mSingOnTime = dimmedTicks;
         mVisualStage = Dimmed;
         return;
     }
 
     if (mVisualStage == FadeOut) {
-        mSingOnTime = fullBrightnessTime;
+        mSingOnTime = fullBrightnessTicks;
         mVisualStage = FullBrightness;
     }
 }
