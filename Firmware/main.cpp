@@ -11,6 +11,8 @@
 #include "PanelClient.h"
 #include "Settings.h"
 
+#include "Version.h"
+
 namespace {
 const uint32_t F_CPU = 72000000;
 
@@ -109,7 +111,7 @@ int main(void)
     HAL_Init();
     systemClockInit();
 
-    LOG("Started");
+    LOG("Firmware version: %s", Version::getString());
 
     Settings::init();
 

@@ -3,6 +3,7 @@
 #include "RTClock.h"
 #include "Wifi.h"
 #include "PanelMessage.h"
+#include "Version.h"
 
 #include "Logger.h"
 
@@ -54,6 +55,8 @@ void PanelClient::process()
     case PanelMessage::SyncNtpTime: onNtpSync(); break;
     case PanelMessage::SetNtpServer: onSetServer(msg); break;
     case PanelMessage::SetTimezone: onSetTimezone(msg); break;
+
+    case PanelMessage::GetVersion: onVersion(); break;
 
     default:
         LOG_ERROR("Unknown message: %i", msg.getCmd());
@@ -266,4 +269,12 @@ void PanelClient::onSetServer(const PanelMessage &msg)
     LOG("Setting ntp url: %s", url.c_str());
 
     mClock->setNtpServer(SString<128>(url.data(), url.size()));
+}
+
+void PanelClient::onVersion() 
+{
+    PanelMessage m(PanelMessage::VersionInfo);
+    m.add("f", Version::getString());
+
+    mUsb.sendData(m.toString());
 }

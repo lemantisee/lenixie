@@ -35,6 +35,8 @@ private:
     void onSetTimezone(const PanelMessage &msg);
     void onSetServer(const PanelMessage &msg);
 
+    void onVersion();
+
     RTClock *mClock = nullptr;
     Wifi *mWifi = nullptr;
 

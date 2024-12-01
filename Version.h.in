@@ -1,0 +1,5 @@
+#pragma once
+
+namespace Version {
+inline const char *getString() { return "${PROJECT_VERSION}"; }
+} // namespace Version
