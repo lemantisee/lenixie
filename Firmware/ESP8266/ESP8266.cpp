@@ -26,8 +26,6 @@ bool ESP8266::init(USART_TypeDef *usart, uint32_t baudrate)
         return false;
     }
 
-    printVersion();
-
     if (!enableMultipleConnections(false)) {
         LOG_ERROR("Unable to disable multiple connections");
         return false;
@@ -181,6 +179,19 @@ ESP8266::ConnectionStatus ESP8266::getConnectionStatus()
     return ConnectionStatus(statusStateStr.toInt());
 }
 
+ESP8266::Version ESP8266::getVersion()
+{
+    EspAtCommand cmd("AT+GMR");
+    sendCommand(cmd);
+    waitForAnswer("OK", 1000);
+
+    Version ver;
+    ver.at = getTokenVersion(mBuffer, "AT version:");
+    ver.sdk = getTokenVersion(mBuffer, "SDK version:");
+
+    return ver;
+}
+
 bool ESP8266::switchToAP(const char *ssid, const char *password)
 {
     LOG("Starting AP");
@@ -270,13 +281,22 @@ bool ESP8266::enableAutoconnection(bool state)
     return waitForAnswer("OK", 2000);
 }
 
-void ESP8266::printVersion() 
+SString<64> ESP8266::getTokenVersion(const SString<256> &str, const char *token) const
 {
-    EspAtCommand cmd("AT+GMR");
-    sendCommand(cmd);
-    waitForAnswer("OK", 1000);
+    auto posStartOpt = str.find(token);
+    if (!posStartOpt) {
+        return {};
+    }
 
-    LOG("%s", mBuffer.c_str());
+    const uint32_t posStart = *posStartOpt + std::strlen(token);
+
+    auto posEndOpt = str.find("(", posStart);
+    if (!posEndOpt) {
+        return {};
+    }
+
+    const uint32_t len = *posEndOpt - posStart;
+    return SString<64>(str.c_str() + posStart, len);
 }
 
 bool ESP8266::connectToAp(const char *ssid, const char *password)

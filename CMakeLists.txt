@@ -11,10 +11,10 @@ add_subdirectory(Libs)
 if(${BUILD_STM32})
     message("Building firmware")
     add_subdirectory(Firmware)
+
+    configure_file(Version.h.in Version.h)
+    target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 else()
     message("Building tests")
     add_subdirectory(Tests)
 endif(${BUILD_STM32})
-
-configure_file(Version.h.in Version.h)
-target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})

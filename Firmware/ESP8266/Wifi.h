@@ -24,6 +24,8 @@ public:
     SString<128> getSsid() const;
     bool isConnected();
 
+    ESP8266::Version getEspVersion();
+
 private:
     void checkConnection();
 

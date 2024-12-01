@@ -271,10 +271,19 @@ void PanelClient::onSetServer(const PanelMessage &msg)
     mClock->setNtpServer(SString<128>(url.data(), url.size()));
 }
 
-void PanelClient::onVersion() 
+void PanelClient::onVersion()
 {
     PanelMessage m(PanelMessage::VersionInfo);
     m.add("f", Version::getString());
+
+    const ESP8266::Version espVersion = mWifi->getEspVersion();
+    if (!espVersion.at.empty()) {
+        m.add("at", espVersion.at.c_str());
+    }
+
+    if (!espVersion.sdk.empty()) {
+        m.add("sdk", espVersion.sdk.c_str());
+    }
 
     mUsb.sendData(m.toString());
 }

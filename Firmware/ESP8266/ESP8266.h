@@ -16,6 +16,12 @@ public:
         WifiConnectionFail = 5
     };
 
+    struct Version
+    {
+        SString<64> at;
+        SString<64> sdk;
+    };
+
     ESP8266() = default;
 
     bool init(USART_TypeDef *usart, uint32_t baudrate);
@@ -37,6 +43,8 @@ public:
     Mode getMode() const;
     ConnectionStatus getConnectionStatus();
 
+    Version getVersion();
+
 private:
     enum Encryption {
         Open = 0,
@@ -56,7 +64,8 @@ private:
     bool enableEcho(bool state);
     bool enableMultipleConnections(bool state);
     bool enableAutoconnection(bool state);
-    void printVersion();
+
+    SString<64> getTokenVersion(const SString<256> &str, const char *token) const;
 
     Uart mUart;
     SString<256> mBuffer;

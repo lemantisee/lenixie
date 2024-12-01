@@ -5,7 +5,8 @@
 #include "Logger.h"
 
 namespace {
-constexpr uint32_t checkConnectionPeriodMs = 30 * 60 * 1000; // 30 min
+// constexpr uint32_t checkConnectionPeriodMs = 30 * 60 * 1000; // 30 min
+constexpr uint32_t checkConnectionPeriodMs = 1 * 60 * 1000; // 1 min
 } // namespace
 
 bool Wifi::init(USART_TypeDef *usart, uint32_t baudrate)
@@ -99,6 +100,8 @@ bool Wifi::isConnected()
     return false;
 }
 
+ESP8266::Version Wifi::getEspVersion() { return mEsp.getVersion(); }
+
 bool Wifi::connecToLastNetwork()
 {
     const SString<128> ssid = Settings::getWifiSSID("");
@@ -138,6 +141,8 @@ void Wifi::checkConnection()
     if (isConnected()) {
         return;
     }
+
+    LOG("Reconnecting to last wifi");
 
     connecToLastNetwork();
 }
