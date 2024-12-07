@@ -115,10 +115,6 @@ int main(void)
 
     Settings::init();
 
-    Wifi wifi;
-    PanelClient panelClient;
-    panelClient.init(&Clock, &wifi);
-
     Indication.setDecoderPins(GPIOB, GPIO_PIN_6, GPIO_PIN_8, GPIO_PIN_9, GPIO_PIN_7);
     Indication.setSign(DynamicIndication::MSBHourTube, GPIOA, GPIO_PIN_6);
     Indication.setSign(DynamicIndication::LSBHourTube, GPIOA, GPIO_PIN_5);
@@ -126,11 +122,17 @@ int main(void)
     Indication.setSign(DynamicIndication::LSBMinutesTube, GPIOA, GPIO_PIN_3);
     Indication.setNumber(1, 2, 3, 4);
 
+    Wifi wifi;
+    PanelClient panelClient;
+    panelClient.init(&Clock, &wifi);
+
     Clock.init(&wifi);
 
     if (!wifi.init(USART3, 115200)) {
         LOG_ERROR("Unable to init wifi");
     }
+
+    int val = 0;
 
     for (;;) {
         panelClient.process();

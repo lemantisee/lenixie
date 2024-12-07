@@ -1,3 +1,4 @@
 /Firmware/WifiCredentials.h
 /.vscode
 /build
+*.user

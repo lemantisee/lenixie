@@ -34,13 +34,13 @@ private:
         bool isDummy = false;
     };
     void clearSigns();
-    const Sign *getCurrentSign();
-    void updateDimm();
+    const Sign *getCurrentSign() const;
+    void processFade();
 
     BCDDecoder mDecoder;
     std::array<Sign, 5> mSigns;
-    uint32_t mTimer = 0;
+    uint32_t mTimerUs = 0;
     VisualStage mVisualStage = FullBrightness;
-    uint32_t mSingOnTime = 0;
-    uint32_t mFadeTicks = 0;
+    uint32_t mSingOnUs = 0;
+    uint32_t mFadeTimerUs = 0;
 };

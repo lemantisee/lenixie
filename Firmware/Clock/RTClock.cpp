@@ -8,7 +8,8 @@
 #include "Logger.h"
 
 namespace {
-constexpr uint32_t ntpPeriodSync = 43200000; // 12 hours
+// constexpr uint32_t ntpPeriodSync = 12 * 60 * 60 * 1000; // 12 hours
+constexpr uint32_t ntpPeriodSyncMs = 10 * 60 * 1000; // 10 min
 void rtcInit(RTC_HandleTypeDef *hrtc)
 {
     if (hrtc->Instance == RTC) {
@@ -103,8 +104,8 @@ void RTClock::process()
         return;
     }
 
-    if (mLastNtpSyncTime + ntpPeriodSync < HAL_GetTick()) {
-        mLastNtpSyncTime = HAL_GetTick();
+    if (mLastNtpSyncTimeMs + ntpPeriodSyncMs < HAL_GetTick()) {
+        mLastNtpSyncTimeMs = HAL_GetTick();
         syncTime(mNtpUrl.c_str());
     }
 }

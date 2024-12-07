@@ -1,7 +1,10 @@
+if(${BUILD_STM32})
 add_subdirectory(CMSIS)
 add_subdirectory(CustomHID)
-add_subdirectory(DataPacket)
 add_subdirectory(HAL)
+endif()
+
+add_subdirectory(DataPacket)
 add_subdirectory(Json)
 add_subdirectory(Logger)
 add_subdirectory(SString)

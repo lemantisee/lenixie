@@ -36,7 +36,7 @@ private:
     RTC_HandleTypeDef mHandle;
     DateTime mTime;
     NTPRequest mNtp;
-    uint32_t mLastNtpSyncTime = 0;
+    uint32_t mLastNtpSyncTimeMs = 0;
     int mTimezone = 0;
     bool mInited = false;
     SString<128> mNtpUrl = "pool.ntp.org";

@@ -55,10 +55,12 @@ std::optional<int64_t> NTPRequest::getNtpTimestamp()
 std::optional<int64_t> NTPRequest::getTimestamp(const char *server)
 {
     if (!mWifi->isConnected()) {
+        LOG("Not connected");
         return std::nullopt;
     }
 
     if (!mWifi->connectToServerUDP(server, 123)) {
+        LOG("Unable to connect to ntp server");
         return std::nullopt;
     }
 

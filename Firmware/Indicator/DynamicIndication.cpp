@@ -2,26 +2,25 @@
 
 namespace {
 constexpr uint8_t updateFreqUs = 50;
-constexpr uint16_t indicationFrameTicks = (16 * 1000) / updateFreqUs; // 16ms - 320
-constexpr uint16_t fullBrightnessTicks = (3 * 1000) / updateFreqUs;   // 3 ms
-constexpr uint8_t dimmedTicks = 200 / updateFreqUs; // 200us
-constexpr uint32_t fadeTicks = (500 * 1000) / updateFreqUs; //500ms
+constexpr uint32_t indicationFrameUs = 16 * 1000;
+constexpr uint32_t fullBrightnessUs = 3 * 1000;
+constexpr uint32_t dimmedUs = 50;
+constexpr uint32_t fadeTransitionUs = 500 * 1000;
 
-constexpr uint32_t fadeTicksRange = fullBrightnessTicks - dimmedTicks;
-constexpr uint32_t fadeTicksStep = fadeTicks / fadeTicksRange;
+constexpr uint32_t fadeRangeUs = fullBrightnessUs - dimmedUs;
+constexpr uint32_t updateFadeStepUs = ((fadeTransitionUs / fadeRangeUs) / updateFreqUs + 1) * updateFreqUs;
 } // namespace
 
-DynamicIndication::DynamicIndication()
+DynamicIndication::DynamicIndication() : mSingOnUs(fullBrightnessUs)
 {
     mSigns.back().isDummy = true;
-    mSingOnTime = fullBrightnessTicks;
 }
 
 void DynamicIndication::setDecoderPins(GPIO_TypeDef *port, uint16_t Apin, uint16_t Bpin,
                                        uint16_t Cpin, uint16_t Dpin)
 {
     mDecoder.init(port, Apin, Bpin, Cpin, Dpin);
-    mTimer = 0;
+    mTimerUs = 0;
 }
 
 void DynamicIndication::setSign(Tube tube, GPIO_TypeDef *port, uint16_t pin)
@@ -46,7 +45,9 @@ void DynamicIndication::process()
 {
     // called every 50us
 
-    updateDimm();
+    processFade();
+
+    mTimerUs += updateFreqUs;
 
     if (const Sign *sign = getCurrentSign()) {
         clearSigns();
@@ -54,6 +55,10 @@ void DynamicIndication::process()
             HAL_GPIO_WritePin(sign->port, sign->pin, GPIO_PIN_SET);
             mDecoder.setValue(sign->number);
         }
+    }
+
+    if (mTimerUs > indicationFrameUs) {
+        mTimerUs = 0;
     }
 }
 
@@ -88,63 +93,52 @@ void DynamicIndication::clearSigns()
         }
         HAL_GPIO_WritePin(sign.port, sign.pin, GPIO_PIN_RESET);
     }
-
-    //TODO this function called in interrupt. Not allowed any delays here
-    // for (int i = 0; i < 4000; i++) {
-    //     asm("nop");
-    // }
 }
 
-const DynamicIndication::Sign *DynamicIndication::getCurrentSign()
+const DynamicIndication::Sign *DynamicIndication::getCurrentSign() const
 {
-    ++mTimer;
-
     for (uint8_t i = 0; i < mSigns.size(); ++i) {
-        if (mTimer == (i * mSingOnTime + 1)) {
+        const uint32_t leftEdge = i * mSingOnUs;
+        const uint32_t rifhtEdge = leftEdge + updateFreqUs;
+        if (mTimerUs > leftEdge && mTimerUs <= rifhtEdge) {
             return &mSigns[i];
         }
-    }
-
-    if (mTimer >= indicationFrameTicks + 1) {
-        mTimer = 0;
     }
 
     return nullptr;
 }
 
-void DynamicIndication::updateDimm()
+void DynamicIndication::processFade()
 {
     if (mVisualStage != FadeIn && mVisualStage != FadeOut) {
         return;
     }
 
-    ++mFadeTicks;
+    mFadeTimerUs += updateFreqUs;
 
-    for (uint32_t r = 0; r < fadeTicksRange; ++r) {
-        if (r * fadeTicksStep == mFadeTicks) {
-            if (mVisualStage == FadeIn) {
-                --mSingOnTime;
-            } else if (mVisualStage == FadeOut) {
-                ++mSingOnTime;
-            }
-            break;
+    const bool updateFade = (mFadeTimerUs % updateFadeStepUs) == 0;
+    if (updateFade) {
+        if (mVisualStage == FadeIn) {
+            --mSingOnUs;
+        } else if (mVisualStage == FadeOut) {
+            ++mSingOnUs;
         }
     }
 
-    if (mFadeTicks != fadeTicks) {
+    if (mFadeTimerUs < fadeTransitionUs) {
         return;
     }
 
-    mFadeTicks = 0;
+    mFadeTimerUs = 0;
 
     if (mVisualStage == FadeIn) {
-        mSingOnTime = dimmedTicks;
         mVisualStage = Dimmed;
+        mSingOnUs == dimmedUs;
         return;
     }
 
     if (mVisualStage == FadeOut) {
-        mSingOnTime = fullBrightnessTicks;
         mVisualStage = FullBrightness;
+        mSingOnUs = fullBrightnessUs;
     }
 }
