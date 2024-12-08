@@ -92,20 +92,6 @@ void SysTick_Handler()
     Indication.process();
 }
 
-void RTC_IRQHandler()
-{
-    Clock.interrupt();
-    
-    const DateTime &time = Clock.getTime();
-    if (!time.isNull()) {
-        Indication.setNumber(DynamicIndication::MSBHourTube, time.hours / 10);
-        Indication.setNumber(DynamicIndication::LSBHourTube, time.hours % 10);
-        Indication.setNumber(DynamicIndication::MSBMinutesTube, time.minutes / 10);
-        Indication.setNumber(DynamicIndication::LSBMinutesTube, time.minutes % 10);
-
-        Indication.dimm(time.hours < 7);
-    }
-}
 }
 
 int main(void)
@@ -123,14 +109,18 @@ int main(void)
     Indication.setSign(DynamicIndication::MSBMinutesTube, GPIOA, GPIO_PIN_4);
     Indication.setSign(DynamicIndication::LSBMinutesTube, GPIOA, GPIO_PIN_3);
 
-    Indication.setNumber(DynamicIndication::MSBHourTube, 1);
-    Indication.setNumber(DynamicIndication::LSBHourTube, 2);
-    Indication.setNumber(DynamicIndication::MSBMinutesTube, 3);
-    Indication.setNumber(DynamicIndication::LSBMinutesTube, 4);
-
     Wifi wifi;
     PanelClient panelClient;
     panelClient.init(&Clock, &wifi);
+
+    Clock.onTimeChanged([](const DateTime &time) {
+        Indication.setNumber(DynamicIndication::MSBHourTube, time.hours / 10);
+        Indication.setNumber(DynamicIndication::LSBHourTube, time.hours % 10);
+        Indication.setNumber(DynamicIndication::MSBMinutesTube, time.minutes / 10);
+        Indication.setNumber(DynamicIndication::LSBMinutesTube, time.minutes % 10);
+
+        Indication.dimm(time.hours < 7);
+    });
 
     Clock.init(&wifi);
 

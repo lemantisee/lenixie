@@ -1,6 +1,8 @@
 #pragma once
 
-#include <stdint.h>
+#include <functional>
+
+#include <cstdint>
 #include <stm32f1xx.h>
 
 #include "NTPRequest.h"
@@ -12,7 +14,7 @@ class Wifi;
 class RTClock
 {
 public:
-    RTClock() = default;
+    RTClock();
     void init(Wifi *wifi);
     bool setTime(const DateTime &dateTime);
     bool setTime(uint8_t hours, uint8_t minutes, uint8_t seconds);
@@ -27,6 +29,8 @@ public:
     void interrupt();
     void syncNtp();
 
+    void onTimeChanged(std::function<void(const DateTime &time)> func);
+
 private:
     void syncTime(const SString<128> &ntpServer);
     bool setRtcTime(uint8_t hours, uint8_t minutes, uint8_t seconds);
@@ -40,4 +44,5 @@ private:
     int mTimezone = 0;
     bool mInited = false;
     SString<128> mNtpUrl = "pool.ntp.org";
+    std::function<void(const DateTime &)> mOnTimeChangedCallback;
 };

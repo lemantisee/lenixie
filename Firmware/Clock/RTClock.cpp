@@ -30,8 +30,22 @@ void rtcDeinit(RTC_HandleTypeDef *hrtc)
 }
 
 bool logRtcTimeAfterSync = false;
+RTClock *instance = nullptr;
 
 } // namespace
+
+extern "C" {
+
+void RTC_IRQHandler()
+{
+    if (instance) {
+        instance->interrupt();
+    }
+}
+
+}
+
+RTClock::RTClock() { instance = this; }
 
 void RTClock::init(Wifi *wifi)
 {
@@ -107,6 +121,12 @@ void RTClock::process()
     if (mLastNtpSyncTimeMs + ntpPeriodSyncMs < HAL_GetTick()) {
         mLastNtpSyncTimeMs = HAL_GetTick();
         syncTime(mNtpUrl.c_str());
+    }
+
+    if (logRtcTimeAfterSync) {
+        logRtcTimeAfterSync = false;
+        LOG("Time: %02i:%02i:%02i", mTime.hours, mTime.minutes, mTime.seconds);
+        LOG("Date: %i-%02i-%02i(%i)", mTime.year, mTime.month, mTime.monthDay, mTime.weekDay);
     }
 }
 
@@ -200,10 +220,8 @@ void RTClock::updateTime()
     mTime.minutes = time.Minutes;
     mTime.seconds = time.Seconds;
 
-    if (logRtcTimeAfterSync) {
-        logRtcTimeAfterSync = false;
-        LOG("Time: %02i:%02i:%02i", mTime.hours, mTime.minutes, mTime.seconds);
-        LOG("Date: %i-%02i-%02i(%i)", mTime.year, mTime.month, mTime.monthDay, date.WeekDay);
+    if (mOnTimeChangedCallback) {
+        mOnTimeChangedCallback(mTime);
     }
 }
 
@@ -222,4 +240,9 @@ void RTClock::setNtpServer(const SString<128> &url)
 void RTClock::syncNtp() 
 {
     syncTime(mNtpUrl.c_str());
+}
+
+void RTClock::onTimeChanged(std::function<void(const DateTime &time)> func) 
+{
+    mOnTimeChangedCallback = func;
 }
