@@ -19,7 +19,7 @@ public:
     void setDecoderPins(GPIO_TypeDef *port, uint16_t Apin, uint16_t Bpin, uint16_t Cpin,
                         uint16_t Dpin);
     void setSign(Tube tube, GPIO_TypeDef *port, uint16_t pin);
-    void setNumber(uint8_t number1, uint8_t number2, uint8_t number3, uint8_t number4);
+    void setNumber(Tube tube, uint8_t number);
     void process();
     void dimm(bool state);
 
@@ -28,17 +28,25 @@ private:
 
     struct Sign
     {
-        GPIO_TypeDef *port = nullptr;
-        uint16_t pin = 0;
+        Sign() = default;
+        Sign(GPIO_TypeDef *port, uint16_t pin);
+
         uint8_t number = 0;
-        bool isDummy = false;
+
+        void turnOff();
+        void turnOn();
+
+    private:
+        GPIO_TypeDef *mPort = nullptr;
+        uint16_t mPin = 0;
     };
-    void clearSigns();
-    const Sign *getCurrentSign() const;
+
     void processFade();
 
+    uint8_t mCurrentSignIndex = 0;
+
     BCDDecoder mDecoder;
-    std::array<Sign, 5> mSigns;
+    std::array<Sign, 4> mSigns;
     uint32_t mTimerUs = 0;
     VisualStage mVisualStage = FullBrightness;
     uint32_t mSingOnUs = 0;
