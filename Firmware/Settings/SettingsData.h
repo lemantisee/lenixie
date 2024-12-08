@@ -8,6 +8,7 @@ struct SettingsData
 {
     enum BoolPosition {
         EnableNtp = 0,
+        EnableDND,
     };
 
     SettingsData();
@@ -27,4 +28,6 @@ public:
     char ntpUrl[128];
     char wifiSsid[128];
     char wifiPassword[128];
+    uint32_t mDndStartHour = 0;
+    uint32_t mDndEndHour = 0;
 };

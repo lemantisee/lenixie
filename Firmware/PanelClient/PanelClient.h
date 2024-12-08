@@ -37,6 +37,10 @@ private:
 
     void onVersion();
 
+    void onDndState();
+    void onSetDnd(const PanelMessage &msg);
+    void onEnableDnd(const PanelMessage &msg);
+
     RTClock *mClock = nullptr;
     Wifi *mWifi = nullptr;
 

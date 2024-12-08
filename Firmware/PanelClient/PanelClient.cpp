@@ -4,6 +4,7 @@
 #include "Wifi.h"
 #include "PanelMessage.h"
 #include "Version.h"
+#include "Settings.h"
 
 #include "Logger.h"
 
@@ -57,6 +58,10 @@ void PanelClient::process()
     case PanelMessage::SetTimezone: onSetTimezone(msg); break;
 
     case PanelMessage::GetVersion: onVersion(); break;
+
+    case PanelMessage::GetDndState: onDndState(); break;
+    case PanelMessage::SetDndHours: onSetDnd(msg); break;
+    case PanelMessage::EnableDnd: onEnableDnd(msg); break;
 
     default:
         LOG_ERROR("Unknown message: %i", msg.getCmd());
@@ -286,4 +291,49 @@ void PanelClient::onVersion()
     }
 
     mUsb.sendData(m.toString());
+}
+
+void PanelClient::onDndState() 
+{
+    PanelMessage m(PanelMessage::DndState);
+    m.add("s", Settings::isDndEnabled());
+
+    const uint32_t start = Settings::getDndStart(25);
+    const uint32_t end = Settings::getDndEnd(25);
+
+    if (start < 24) {
+        m.add("sh", start);
+    }
+
+    if (end < 24) {
+        m.add("eh", end);
+    }
+
+    mUsb.sendData(m.toString());
+}
+
+void PanelClient::onSetDnd(const PanelMessage &msg)
+{
+    SendAckGuard g(mUsb);
+
+    uint32_t start = msg.getInt("sh", 25);
+    uint32_t end = msg.getInt("eh", 25);
+
+    if (start > 23 || end > 23) {
+        LOG_ERROR("Inavalid dnd hours");
+        return;
+    }
+
+    LOG("Set DND from %i to %i", start, end);
+
+    Settings::setDndStart(start);
+    Settings::setDndStart(end);
+}
+
+void PanelClient::onEnableDnd(const PanelMessage &msg) 
+{
+    bool state = msg.getBool("s");
+    LOG("%s DND", state ? "Enable" : "Disable");
+    Settings::enableDnd(state);
+    sendAck();
 }

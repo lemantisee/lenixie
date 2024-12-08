@@ -58,6 +58,18 @@ SString<128> Settings::getWifiPassword(const char *defaultValue)
     return SString<128>(pass);
 }
 
+bool Settings::isDndEnabled() { return getInstance().mData.getBool(SettingsData::EnableDND); }
+
+uint32_t Settings::getDndStart(uint32_t defaultValue)
+{
+    return getInstance().mData.empty() ? defaultValue : getInstance().mData.mDndStartHour;
+}
+
+uint32_t Settings::getDndEnd(uint32_t defaultValue)
+{
+    return getInstance().mData.empty() ? defaultValue : getInstance().mData.mDndEndHour;
+}
+
 void Settings::setTimezone(int timezone)
 {
     getInstance().mData.timezone = timezone;
@@ -79,6 +91,24 @@ void Settings::setWifiSSID(const SString<128> &ssid)
 void Settings::setWifiPassword(const SString<128> &password)
 {
     copyString(getInstance().mData.wifiPassword, password);
+    getInstance().writeSettings();
+}
+
+void Settings::enableDnd(bool state) 
+{
+    getInstance().mData.setBool(SettingsData::EnableDND, state);
+    getInstance().writeSettings();
+}
+
+void Settings::setDndStart(uint32_t value)
+{
+    getInstance().mData.mDndStartHour = value;
+    getInstance().writeSettings();
+}
+
+void Settings::setDndEnd(uint32_t value)
+{
+    getInstance().mData.mDndEndHour = value;
     getInstance().writeSettings();
 }
 

@@ -26,6 +26,10 @@ public:
         NtpState = 16,
         GetVersion = 17,
         VersionInfo = 18,
+        SetDndHours = 19,
+        EnableDnd = 20,
+        GetDndState = 21,
+        DndState = 22,
 
         MessageAck = 50,
     };
@@ -43,9 +47,10 @@ public:
 
     PanelCommandId getCmd() const { return PanelCommandId(mJson.getInt("id", UnknownCommand)); }
     int getInt(const char *key, int defaultValue) const { return mJson.getInt(key, defaultValue); }
+    bool getBool(const char *key) const { return mJson.getBool(key, false); }
     SString<256> getString(const char *key) const { return mJson.get(key); }
 
-    void set(const char *key, int value) { mJson.add(key, value); }
+    void add(const char *key, int value) { mJson.add(key, value); }
     void add(const char *key, const char *str) { mJson.add(key, str); }
     const SString<256> &toString() { return mJson.dump(); }
 

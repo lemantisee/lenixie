@@ -119,7 +119,10 @@ int main(void)
         Indication.setNumber(DynamicIndication::MSBMinutesTube, time.minutes / 10);
         Indication.setNumber(DynamicIndication::LSBMinutesTube, time.minutes % 10);
 
-        Indication.dimm(time.hours < 7);
+        const bool setDimm = Settings::isDndEnabled() && time.hours > Settings::getDndStart(25)
+                             || time.hours < Settings::getDndEnd(0);
+
+        Indication.dimm(setDimm);
     });
 
     Clock.init(&wifi);
