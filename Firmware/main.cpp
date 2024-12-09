@@ -108,6 +108,7 @@ int main(void)
     Indication.setSign(DynamicIndication::LSBHourTube, GPIOA, GPIO_PIN_5);
     Indication.setSign(DynamicIndication::MSBMinutesTube, GPIOA, GPIO_PIN_4);
     Indication.setSign(DynamicIndication::LSBMinutesTube, GPIOA, GPIO_PIN_3);
+    Indication.start();
 
     Wifi wifi;
     PanelClient panelClient;

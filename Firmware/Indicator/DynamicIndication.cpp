@@ -39,8 +39,16 @@ void DynamicIndication::setNumber(Tube tube, uint8_t number)
     mSigns[tube].number = number;
 }
 
+void DynamicIndication::start() 
+{
+    mStarted = true;
+}
+
 void DynamicIndication::process()
 {
+    if (!mStarted) {
+        return;
+    }
     // called every 50us
 
     if (mCurrentSignIndex >= mSigns.size()) {

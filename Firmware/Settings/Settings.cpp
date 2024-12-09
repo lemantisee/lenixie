@@ -22,7 +22,7 @@ void Settings::init()
 
 int Settings::getTimezone(int defaultvalue)
 {
-    if (getInstance().mData.empty()) {
+    if (getInstance().mData.isNull()) {
         return defaultvalue;
     }
     return getInstance().mData.timezone;
@@ -30,7 +30,7 @@ int Settings::getTimezone(int defaultvalue)
 
 SString<128> Settings::getNtpUrl(const char *defaultValue)
 {
-    if (getInstance().mData.empty()) {
+    if (getInstance().mData.isNull()) {
         return defaultValue;
     }
 
@@ -40,7 +40,7 @@ SString<128> Settings::getNtpUrl(const char *defaultValue)
 
 SString<128> Settings::getWifiSSID(const char *defaultValue)
 {
-    if (getInstance().mData.empty()) {
+    if (getInstance().mData.isNull()) {
         return defaultValue;
     }
 
@@ -50,7 +50,7 @@ SString<128> Settings::getWifiSSID(const char *defaultValue)
 
 SString<128> Settings::getWifiPassword(const char *defaultValue)
 {
-    if (getInstance().mData.empty()) {
+    if (getInstance().mData.isNull()) {
         return defaultValue;
     }
 
@@ -62,12 +62,12 @@ bool Settings::isDndEnabled() { return getInstance().mData.getBool(SettingsData:
 
 uint32_t Settings::getDndStart(uint32_t defaultValue)
 {
-    return getInstance().mData.empty() ? defaultValue : getInstance().mData.mDndStartHour;
+    return getInstance().mData.isNull() ? defaultValue : getInstance().mData.mDndStartHour;
 }
 
 uint32_t Settings::getDndEnd(uint32_t defaultValue)
 {
-    return getInstance().mData.empty() ? defaultValue : getInstance().mData.mDndEndHour;
+    return getInstance().mData.isNull() ? defaultValue : getInstance().mData.mDndEndHour;
 }
 
 void Settings::setTimezone(int timezone)
@@ -124,16 +124,16 @@ void Settings::readSettings()
 
     const uint32_t *source_addr = (uint32_t *)pageAddres;
     uint32_t *dest_addr = (uint32_t *)&mData;
-    for (uint16_t i = 0; i < sizeof(SettingsData) / sizeof(uint32_t); i++) {
+    for (uint16_t i = 0; i < sizeof(mData) / sizeof(uint32_t); i++) {
         *dest_addr = *(__IO uint32_t *)source_addr;
         ++source_addr;
         ++dest_addr;
     }
 
-    if (mData.empty()) {
-        // erased flash page filled with 1
-        // clean data to default values to rewrite values from erased page
+    if (mData.isNull()) {
+        // if data is null write default settings to flash
         mData = {};
+        writeSettings();
     }
 }
 

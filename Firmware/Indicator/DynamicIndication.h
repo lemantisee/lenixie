@@ -20,6 +20,7 @@ public:
                         uint16_t Dpin);
     void setSign(Tube tube, GPIO_TypeDef *port, uint16_t pin);
     void setNumber(Tube tube, uint8_t number);
+    void start();
     void process();
     void dimm(bool state);
 
@@ -51,4 +52,5 @@ private:
     VisualStage mVisualStage = FullBrightness;
     uint32_t mSingOnUs = 0;
     uint32_t mFadeTimerUs = 0;
+    bool mStarted = false;
 };

@@ -13,10 +13,11 @@ struct SettingsData
 
     SettingsData();
 
-    bool empty() { return mEmptyMark == std::numeric_limits<uint32_t>::max(); }
+    bool isNull() const;
     bool getBool(BoolPosition pos) const;
     void setBool(BoolPosition pos, bool state);
     void setNotEmpty();
+    void validate();
 
 private:
     uint32_t mEmptyMark = std::numeric_limits<uint32_t>::max();
