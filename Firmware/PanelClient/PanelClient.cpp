@@ -327,7 +327,7 @@ void PanelClient::onSetDnd(const PanelMessage &msg)
     LOG("Set DND from %i to %i", start, end);
 
     Settings::setDndStart(start);
-    Settings::setDndStart(end);
+    Settings::setDndEnd(end);
 }
 
 void PanelClient::onEnableDnd(const PanelMessage &msg) 
