@@ -115,12 +115,16 @@ int main(void)
     panelClient.init(&Clock, &wifi);
 
     Clock.onTimeChanged([](const DateTime &time) {
+        if (time.isNull()) {
+            return;
+        }
+
         Indication.setNumber(DynamicIndication::MSBHourTube, time.hours / 10);
         Indication.setNumber(DynamicIndication::LSBHourTube, time.hours % 10);
         Indication.setNumber(DynamicIndication::MSBMinutesTube, time.minutes / 10);
         Indication.setNumber(DynamicIndication::LSBMinutesTube, time.minutes % 10);
 
-        const bool setDimm = Settings::isDndEnabled() && time.hours > Settings::getDndStart(25)
+        const bool setDimm = Settings::isDndEnabled() && time.hours >= Settings::getDndStart(25)
                              || time.hours < Settings::getDndEnd(0);
 
         Indication.dimm(setDimm);

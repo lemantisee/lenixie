@@ -61,6 +61,7 @@ void RTClock::init(Wifi *wifi)
 
     HAL_RTC_Init(&mHandle);
     __HAL_RTC_ALARM_ENABLE_IT(&mHandle, RTC_IT_SEC);
+    __HAL_RTC_ALARM_DISABLE_IT(&mHandle, RTC_IT_ALRA);
 
     wifi->onConnect([this] { syncTime(mNtpUrl.c_str()); });
 

@@ -36,7 +36,9 @@ void DynamicIndication::setNumber(Tube tube, uint8_t number)
         return;
     }
 
-    mSigns[tube].number = number;
+
+
+    mSigns[tube].number = std::min<uint8_t>(number, 9);
 }
 
 void DynamicIndication::start() 
